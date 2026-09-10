@@ -37,9 +37,9 @@ Mock-реализация Telegram-интерфейса BRANDLY на Next.js, Ty
 
 ## Интерфейсы Telegram
 
-- `ReplyKeyboardMarkup` — постоянное нижнее меню с пятью основными действиями.
+- `ReplyKeyboardMarkup` — постоянное нижнее меню с пятью основными действиями: монтаж и ролики получают синий стиль, баланс — зелёный, если Telegram-клиент поддерживает стили кнопок.
 - `InlineKeyboardMarkup` — кнопки под сообщением, которые вызывают callbacks и обновляют карточки.
-- Menu Button / Web App — системная кнопка «Приложение ✨», открывающая `/mini-app` в Telegram WebView.
+- Menu Button / Web App — синяя системная кнопка «Приложение ✨» рядом с полем ввода, открывающая `/mini-app` в Telegram WebView. Она появляется после `npm run telegram:setup`.
 
 ## Структура
 
