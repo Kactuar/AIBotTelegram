@@ -54,3 +54,5 @@ scripts/setup-telegram.ts  установка webhook и Menu Button
 ```
 
 `bot.start()` отсутствует: production-обновления Telegram передаёт в `POST /api/telegram`.
+
+push
