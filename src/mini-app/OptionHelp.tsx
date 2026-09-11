@@ -2,6 +2,7 @@
 
 import type { MontageSettings } from "@/src/montage/types";
 import InfoDialog from "./InfoDialog";
+import type { MiniAppLanguage } from "./i18n";
 import styles from "@/app/mini-app/page.module.css";
 
 type MontageOption = {
@@ -11,7 +12,7 @@ type MontageOption = {
   image?: { src: string; alt: string; width: number; height: number };
 };
 
-export const toggles: MontageOption[] = [
+const toggles: MontageOption[] = [
   {
     key: "trimVideo", label: "Нарезать видео",
     paragraphs: [
@@ -48,8 +49,22 @@ export const toggles: MontageOption[] = [
   },
 ];
 
-export default function OptionHelp({ option, onClose }: { option: MontageOption; onClose(): void }) {
-  return <InfoDialog labelledBy="option-help-title" onClose={onClose}>
+export function getToggles(language: MiniAppLanguage): MontageOption[] {
+  if (language === "ru") return toggles;
+  const text = [
+    ["Trim video", "Remove pauses and repetitions, then assemble the video from the strongest fragments.", "Turn this off for an already edited video when its pacing should stay unchanged."],
+    ["Generate a video hook", "Let the model make the opening of the video more engaging."],
+    ["Sound effects", "Short sound accents for scene and subtitle changes."],
+    ["Media cards", "Add generated images over the video when they fit its meaning."],
+    ["Emoji in subtitles", "Add fitting emoji to subtitles."],
+    ["Badges and cards", "Add text badges with key phrases and numbers over the video."],
+    ["Camera motion", "Add subtle camera movement and zoom instead of a static picture."],
+  ];
+  return toggles.map((option, index) => ({ ...option, label: text[index][0], paragraphs: text[index].slice(1), image: option.image && { ...option.image, alt: text[index][0] } }));
+}
+
+export default function OptionHelp({ option, onClose, language }: { option: MontageOption; onClose(): void; language: MiniAppLanguage }) {
+  return <InfoDialog labelledBy="option-help-title" onClose={onClose} language={language}>
     {option.image && <img {...option.image} className={`${styles.helpImage} ${option.key === "mediaCards" ? styles.helpPortrait : ""}`} />}
     <h2 id="option-help-title">{option.label}</h2>
     {option.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}

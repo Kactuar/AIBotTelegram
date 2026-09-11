@@ -14,7 +14,7 @@ import { defaultMontageSettings } from "../src/montage/types";
 import { readSession, verifyTelegramInitData } from "../src/lib/auth";
 import { POST as authorizeTelegram } from "../app/api/auth/telegram/route";
 import { verifyLanguage } from "./verify-language";
-import { closeDatabase, completeMockPayment, createPaymentIntent, createProject, failProject, finishProject, getUser, hasActiveProject, paymentOperations, paymentState, projectById, reserveGeneration, updateProject } from "../src/lib/database";
+import { closeDatabase, completedProjectCount, completeMockPayment, createPaymentIntent, createProject, failProject, finishProject, getBotLanguage, getUser, hasActiveProject, paymentOperations, paymentState, profileIdentity, projectById, reserveGeneration, saveProfileIdentity, setBotLanguage, updateProject } from "../src/lib/database";
 import { paymentPackages, priceFor } from "../src/lib/payments";
 import { createWatermark } from "../src/lib/watermark";
 assert.ok(mockVideos.length > 0, "At least one mock video is required");
@@ -36,11 +36,11 @@ assert.ok(!prompt.includes("sound design"));
 assert.ok(prompt.indexOf("Glass Reels") < prompt.indexOf("crimson-red"));
 assert.ok(prompt.indexOf("crimson-red") < prompt.indexOf("compelling visual hook"));
 const token = "verification-token";
-const init = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), query_id: "test", user: JSON.stringify({ id: 42, first_name: "Test" }) });
+const init = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), query_id: "test", user: JSON.stringify({ id: 42, first_name: "Test", username: "tester" }) });
 const check = [...init.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${key}=${value}`).join("\n");
 const secret = crypto.createHmac("sha256", "WebAppData").update(token).digest();
 init.set("hash", crypto.createHmac("sha256", secret).update(check).digest("hex"));
-assert.equal(verifyTelegramInitData(init.toString(), token).id, "42");
+assert.deepEqual(verifyTelegramInitData(init.toString(), token), { id: "42", firstName: "Test", username: "tester" });
 init.set("user", JSON.stringify({ id: 99 }));
 assert.throws(() => verifyTelegramInitData(init.toString(), token));
 const verificationDb = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "aibot-verify-")), "app.sqlite");
@@ -74,6 +74,13 @@ updateProject(trial.id, { status: "uploaded", inputPath: "/tmp/input.mp4" });
 assert.deepEqual(reserveGeneration(trial.id, "43", prompt), { ok: true, trial: true, cost: 0 });
 assert.equal(getUser("43").balance, 0);
 finishProject(trial.id, "/tmp/result.mp4", "/tmp/trial-watermarked.mp4");
+assert.equal(completedProjectCount("43"), 1);
+assert.equal(completedProjectCount("42"), 0);
+setBotLanguage("43", "en");
+assert.equal(getBotLanguage("43"), "en");
+assert.equal(getBotLanguage("44"), "ru");
+saveProfileIdentity("46", "Profile", "profile_user");
+assert.deepEqual(profileIdentity("46"), { firstName: "Profile", username: "profile_user" });
 assert.equal(paymentState("43").trialAvailable, false);
 const payment = createPaymentIntent("43", "payment-1", "active", "telegram_stars", "payment-key");
 assert.ok(payment);
@@ -89,7 +96,7 @@ assert.ok(cancelled);
 assert.equal(completeMockPayment("44", "payment-cancelled", "cancelled")?.balance, 0);
 async function verifyAuthRoute() {
   const signedData = (id: number) => {
-    const params = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), user: JSON.stringify({ id, first_name: "Test" }) });
+    const params = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), user: JSON.stringify({ id, first_name: "Test", username: `user${id}` }) });
     const checkString = [...params.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${key}=${value}`).join("\n");
     params.set("hash", crypto.createHmac("sha256", secret).update(checkString).digest("hex"));
     return params;
@@ -103,6 +110,8 @@ async function verifyAuthRoute() {
   assert.equal(payload.user.id, "42");
   assert.equal(payload.user.allowed, true);
   assert.equal(payload.user.balance, 100);
+  assert.equal(payload.user.username, "user42");
+  assert.equal(payload.user.language, "ru");
   assert.equal(payload.user.trialAvailable, true);
   assert.deepEqual(payload.settings, defaultMontageSettings);
   assert.equal(readSession(allowed.cookies.get("aibot_session")?.value), "42");
@@ -110,7 +119,7 @@ async function verifyAuthRoute() {
 
   const ordinary = await authorize(signedData(43).toString());
   assert.equal(ordinary.status, 200);
-  assert.deepEqual((await ordinary.json()).user, { id: "43", firstName: "Test", allowed: false, balance: 590, trialAvailable: false, trialProjectId: "verify-trial", trialUnlocked: true });
+  assert.deepEqual((await ordinary.json()).user, { id: "43", firstName: "Test", username: "user43", language: "en", allowed: false, balance: 590, trialAvailable: false, trialProjectId: "verify-trial", trialUnlocked: true });
 
   const forged = signedData(42);
   forged.set("user", JSON.stringify({ id: 44 }));

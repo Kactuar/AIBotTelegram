@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import styles from "@/app/mini-app/page.module.css";
+import { copy, type MiniAppLanguage } from "./i18n";
 
-export default function InfoDialog({ labelledBy, onClose, children }: { labelledBy: string; onClose(): void; children: ReactNode }) {
+export default function InfoDialog({ labelledBy, onClose, children, language = "ru" }: { labelledBy: string; onClose(): void; children: ReactNode; language?: MiniAppLanguage }) {
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export default function InfoDialog({ labelledBy, onClose, children }: { labelled
   return <dialog ref={dialog} className={styles.requirements} aria-labelledby={labelledBy} tabIndex={-1} autoFocus onCancel={onClose} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <div className={styles.requirementsContent}>
       {children}
-      <button type="button" className={styles.requirementsClose} onClick={onClose}>Понятно</button>
+      <button type="button" className={styles.requirementsClose} onClick={onClose}>{copy[language].common.close}</button>
     </div>
   </dialog>;
 }

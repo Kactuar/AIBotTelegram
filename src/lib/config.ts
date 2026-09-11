@@ -16,5 +16,7 @@ export function appConfig() {
     allowedUserIds: new Set((process.env.TELEGRAM_ALLOWED_USER_IDS || "").split(",").map((id) => id.trim()).filter(Boolean)),
     runwaySecret: process.env.RUNWAYML_API_SECRET?.trim(),
     paymentMode: process.env.PAYMENTS_MODE === "mock" ? "mock" : "disabled" as "mock" | "disabled",
+    supportUrl: process.env.SUPPORT_URL?.trim(),
+    officialChannelUrl: process.env.OFFICIAL_CHANNEL_URL?.trim(),
   };
 }

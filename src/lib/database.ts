@@ -22,6 +22,8 @@ export function db() {
     );
     CREATE TABLE IF NOT EXISTS users (
       telegram_id TEXT PRIMARY KEY,
+      first_name TEXT,
+      username TEXT,
       balance INTEGER NOT NULL,
       settings_json TEXT NOT NULL,
       created_at TEXT NOT NULL,
@@ -63,7 +65,7 @@ export function db() {
     );
     CREATE INDEX IF NOT EXISTS payment_operations_user_created ON payment_operations(user_id, created_at DESC);
   `);
-  for (const [column, definition] of [["watermarked_result_path", "TEXT"], ["is_trial", "INTEGER NOT NULL DEFAULT 0"], ["trial_unlocked_at", "TEXT"]] as const) {
+  for (const [column, definition] of [["watermarked_result_path", "TEXT"], ["is_trial", "INTEGER NOT NULL DEFAULT 0"], ["trial_unlocked_at", "TEXT"], ["first_name", "TEXT"], ["username", "TEXT"]] as const) {
     const known = database.prepare("PRAGMA table_info(projects)").all() as { name: string }[];
     if (!known.some((item) => item.name === column)) database.exec(`ALTER TABLE projects ADD COLUMN ${column} ${definition}`);
   }
@@ -79,6 +81,20 @@ export function getBotLanguage(telegramId: string): "ru" | "en" {
 
 export function setBotLanguage(telegramId: string, language: "ru" | "en") {
   db().prepare("INSERT INTO bot_languages (telegram_id, language) VALUES (?, ?) ON CONFLICT(telegram_id) DO UPDATE SET language = excluded.language").run(telegramId, language);
+}
+
+export function completedProjectCount(telegramId: string) {
+  return Number((db().prepare("SELECT COUNT(*) AS count FROM projects WHERE user_id = ? AND status = 'completed'").get(telegramId) as { count: number }).count);
+}
+
+export function saveProfileIdentity(telegramId: string, firstName?: string, username?: string) {
+  getUser(telegramId);
+  db().prepare("UPDATE users SET first_name = ?, username = ?, updated_at = ? WHERE telegram_id = ?").run(firstName || null, username || null, now(), telegramId);
+}
+
+export function profileIdentity(telegramId: string) {
+  getUser(telegramId);
+  return db().prepare("SELECT first_name AS firstName, username FROM users WHERE telegram_id = ?").get(telegramId) as { firstName?: string; username?: string };
 }
 
 export function getOrCreateUser(telegramId: string, isAllowed: boolean) {
