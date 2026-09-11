@@ -1,59 +1,138 @@
-# Brandly-style Telegram Mini App
+# Telegram Mini App в стиле Brandly
 
-One Next.js application receives the Telegram webhook and serves `/mini-app`. A separate PM2 worker reads queued projects from SQLite and calls Runway Aleph 2.
+Одно приложение на Next.js принимает webhook от Telegram и обслуживает маршрут `/mini-app`. Отдельный worker под управлением PM2 получает проекты из очереди SQLite и вызывает Runway Aleph 2.
 
-The Mini App implements the Brandly-inspired montage screen: light/dark themes, animated color selection, an intro modal, local preview, drag-and-drop upload, stored settings, and polling. The four other navigation tabs are visual placeholders by design.
+Mini App реализует экран создания монтажа, вдохновлённый Brandly: светлая и тёмная темы, анимированный выбор цвета, вступительное модальное окно, локальный предпросмотр, загрузка файлов через drag-and-drop, сохранение настроек и polling. Остальные четыре вкладки навигации намеренно являются только визуальными заглушками.
 
-## What is real and simplified
+## Что реализовано по-настоящему, а что упрощено
 
-- Telegram Mini App `initData` is verified on the server. A signed `HttpOnly` session cookie lasts 24 hours.
-- Only IDs in `TELEGRAM_ALLOWED_USER_IDS` can run Runway. They get 100 mock tokens at first login; a project reserves 23 and returns them when Runway fails.
-- Source files are written outside the public directory as `.part`, then atomically renamed. The worker deletes sources after a successful Runway handoff. Results are held for 72 hours and require an expiring signed link.
-- There are no payments, transcription, FFmpeg, guaranteed captions, or exact cut timing. Enabled toggles are fixed prompt blocks, so captions, sound, cards and camera movement are best-effort model instructions.
+* `initData` Telegram Mini App проверяется на сервере. Подписанная сессионная cookie с флагом `HttpOnly` действует 24 часа.
 
-## Local setup
+* Только пользователи, чьи ID указаны в `TELEGRAM_ALLOWED_USER_IDS`, могут запускать Runway. При первом входе они получают 100 тестовых токенов; создание проекта резервирует 23 токена, а если Runway завершится с ошибкой, токены возвращаются.
 
-Use Node.js 24 (`.nvmrc`). The SQLite driver requires at least Node.js 22.
+* Исходные файлы записываются вне публичной директории сначала как `.part`, после чего атомарно переименовываются. Worker удаляет исходные файлы после успешной передачи в Runway. Результаты хранятся 72 часа и доступны только по временной подписанной ссылке.
 
-1. Copy `.env.example` to `.env.local` and set values such as:
+* Платежей, транскрибации, FFmpeg, гарантированных субтитров и точного тайминга монтажа нет. Включённые переключатели просто добавляют фиксированные блоки к промпту, поэтому субтитры, звук, карточки и движение камеры являются лишь инструкциями для модели и выполняются по принципу best-effort.
+
+## Локальная настройка
+
+1. Скопируйте `.env.example` в `.env.local` и задайте необходимые значения, например:
 
 ```env
 BOT_TOKEN=token-from-BotFather
+
 APP_URL=http://localhost:3000
+
 MINI_APP_URL=http://localhost:3000/mini-app
+
 SESSION_SECRET=long-random-string
+
 TELEGRAM_ALLOWED_USER_IDS=123456789
+
 RUNWAYML_API_SECRET=runway-secret
 ```
 
-2. Run `npm run dev` for the web app and `npm run worker` in another terminal for the queue.
-3. Run `npm run verify`. It checks the current bot keyboard, prompt ordering/toggle exclusion, and valid/tampered Telegram `initData`.
+2. Запустите `npm run dev` для веб-приложения, а в другом терминале — `npm run worker` для обработки очереди.
 
-Browser-only development can inspect the layout but cannot start a project: genuine `initData` is supplied only by Telegram.
+3. Запустите `npm run verify`. Команда проверяет текущую клавиатуру бота, порядок формирования промпта и исключение отключённых переключателей, а также корректные и подделанные Telegram `initData`.
 
-## Hetzner layout
+При разработке только через браузер можно просматривать интерфейс, но запускать проект нельзя: настоящий `initData` передаётся только самим Telegram.
+
+## Структура на Hetzner
 
 ```text
-/srv/aibot/current       deployed application
-/srv/aibot/.env          production secrets, mode 600
+/srv/aibot/current       развёрнутое приложение
+
+/srv/aibot/.env          production-секреты, права доступа 600
+
 /srv/aibot/data/app.sqlite
+
 /srv/aibot/storage/<telegram-id>/<project-id>/result.mp4
 ```
 
-`DATABASE_PATH` and `STORAGE_ROOT` in `/srv/aibot/.env` must match these paths. The web process binds only to `127.0.0.1:3010`; Caddy is the public listener.
+Значения `DATABASE_PATH` и `STORAGE_ROOT` в `/srv/aibot/.env` должны соответствовать этим путям. Веб-процесс слушает только `127.0.0.1:3010`; публичным сервером выступает Caddy.
 
-## Production deployment
+## Развёртывание в production
 
-1. Copy the app to `/srv/aibot/current`. Load nvm with `source ~/.nvm/nvm.sh`, install Node.js 24 with `nvm install 24`, then select it in this shell with `nvm use 24`. Keep the existing default alias and Bookilion processes unchanged. Run `npm ci`, `npm run verify`, then `npm run build` under Node.js 24. Reinstall dependencies when changing the Node.js major version because SQLite contains a native binary.
-2. Create `/srv/aibot/.env` from `.env.example`, set secrets, and make it readable only by the deploy user. Symlink it as `/srv/aibot/current/.env.local` so Next.js receives the same values; the worker reads `/srv/aibot/.env` via `AIBOT_ENV_PATH`. Do not put secrets into `deploy/ecosystem.config.cjs`.
-3. Set `export AIBOT_NODE="$(nvm which 24)"`, then run the existing PM2 CLI: `/home/deploy/.nvm/versions/node/v20.20.2/bin/pm2 start deploy/ecosystem.config.cjs --only aibot-web,aibot-worker`. The ecosystem file explicitly sets each bot process's Node interpreter to `AIBOT_NODE`; it does not depend on the PM2 daemon's Node version. Do not restart or upgrade the shared PM2 daemon. `aibot-web` serves port 3010 locally; `aibot-worker` polls projects every five seconds and cleans expired results hourly.
-4. Check `curl http://127.0.0.1:3010/mini-app` before touching Caddy.
-5. Add `deploy/Caddyfile.aibot.http-challenge` as a separate, temporary site, run `caddy validate --config /etc/caddy/Caddyfile`, then reload only if validation succeeds. It serves `/var/www/acme` on the raw IP and makes the HTTP challenge reachable.
-6. The Ubuntu repository offers Certbot 4.0, which is too old for IP certificates. Install the verified Snap channel instead: `sudo snap install --classic certbot` (currently 5.8.0), then request the certificate with `sudo certbot certonly --webroot -w /var/www/acme --preferred-profile shortlived --ip-address 95.216.200.181 -m YOUR_EMAIL --agree-tos --non-interactive`.
-7. Certbot's private key is root-only while this server's Caddy service runs as `caddy`. Before configuring TLS, copy both certificate files into `/etc/caddy/certs/aibot` owned by `caddy`; Caddy must point to those copies. Replace the temporary site with `deploy/Caddyfile.aibot`, validate the entire config, and reload Caddy. It proxies only the IP to port 3010.
-8. Install `deploy/renew-aibot-certificate.sh` as Certbot's deploy-hook. It exits for every certificate except `95.216.200.181`; for that IP certificate it copies the renewed root-only files to Caddy's private directory, validates, then reloads Caddy. Configure the Certbot timer to attempt renewal twice per day because IP certificates are short-lived.
-9. Verify `https://95.216.200.181/mini-app` externally. Then put that IP URL into local `APP_URL` and `MINI_APP_URL`, and run `npm run telegram:setup`. The script calls `setWebhook` for `/api/telegram`, sets the Menu Button URL, and reads both values back.
+1. Скопируйте приложение в `/srv/aibot/current`, выполните `npm ci`, затем `npm run build`.
 
-Do not use Caddy's internal certificate because Telegram will not trust it.
+2. Создайте `/srv/aibot/.env` на основе `.env.example`, укажите секреты и настройте доступ так, чтобы файл мог читать только пользователь, выполняющий деплой. Создайте символьную ссылку на него как `/srv/aibot/current/.env.local`, чтобы Next.js получал те же значения. Worker читает `/srv/aibot/.env` через `AIBOT_ENV_PATH`.
 
-Rollback: run `npm run telegram:setup` with the former Vercel URLs, stop `aibot-web` and `aibot-worker`, then remove only this IP-specific Caddy site.
+Не помещайте секреты в `deploy/ecosystem.config.cjs`.
+
+3. Выполните:
+
+```bash
+/home/deploy/.nvm/versions/node/v20.20.2/bin/pm2 start deploy/ecosystem.config.cjs
+```
+
+Сохранённый в репозитории шаблон PM2 использует тот же абсолютный путь к npm, поскольку Node.js на этом сервере установлен через nvm.
+
+`aibot-web` локально обслуживает порт 3010; `aibot-worker` проверяет очередь проектов каждые пять секунд и раз в час удаляет результаты с истёкшим сроком хранения.
+
+4. Перед настройкой Caddy проверьте:
+
+```bash
+curl http://127.0.0.1:3010/mini-app
+```
+
+5. Добавьте `deploy/Caddyfile.aibot.http-challenge` как отдельный временный сайт, затем выполните:
+
+```bash
+caddy validate --config /etc/caddy/Caddyfile
+```
+
+Перезагружайте Caddy только в случае успешной проверки конфигурации.
+
+Этот временный сайт обслуживает `/var/www/acme` на публичном IP-адресе и позволяет пройти HTTP challenge.
+
+6. В репозитории Ubuntu доступен Certbot 4.0, который слишком стар для выпуска сертификатов на IP-адреса. Вместо него установите проверенную Snap-версию:
+
+```bash
+sudo snap install --classic certbot
+```
+
+Сейчас это версия 5.8.0.
+
+После этого запросите сертификат:
+
+```bash
+sudo certbot certonly \
+  --webroot \
+  -w /var/www/acme \
+  --preferred-profile shortlived \
+  --ip-address 95.216.200.181 \
+  -m YOUR_EMAIL \
+  --agree-tos \
+  --non-interactive
+```
+
+7. Замените временный сайт конфигурацией `deploy/Caddyfile.aibot`, проверьте всю конфигурацию и перезагрузите Caddy.
+
+После получения сертификата указанные в `tls` пути будут существовать, а Caddy будет проксировать запросы с IP-адреса на порт 3010.
+
+8. Установите `deploy/renew-aibot-certificate.sh` в качестве deploy-hook для Certbot.
+
+Перед перезагрузкой Caddy hook сначала проверяет конфигурацию.
+
+Настройте таймер Certbot на попытку обновления сертификата два раза в сутки, поскольку сертификаты для IP-адресов имеют короткий срок действия.
+
+9. Внешне проверьте:
+
+```text
+https://95.216.200.181/mini-app
+```
+
+Затем укажите этот IP-адрес в локальных `APP_URL` и `MINI_APP_URL` и выполните:
+
+```bash
+npm run telegram:setup
+```
+
+Скрипт вызывает `setWebhook` для `/api/telegram`, устанавливает URL кнопки Menu Button и затем считывает оба значения обратно для проверки.
+
+Не используйте внутренний сертификат Caddy, поскольку Telegram ему не доверяет.
+
+### Откат
+
+Запустите `npm run telegram:setup`, указав прежние URL на Vercel, остановите `aibot-web` и `aibot-worker`, после чего удалите только Caddy-конфигурацию, относящуюся к этому IP-адресу.
