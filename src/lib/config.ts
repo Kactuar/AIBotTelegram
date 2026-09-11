@@ -15,5 +15,6 @@ export function appConfig() {
     storageRoot: process.env.STORAGE_ROOT || path.join(process.cwd(), ".data", "storage"),
     allowedUserIds: new Set((process.env.TELEGRAM_ALLOWED_USER_IDS || "").split(",").map((id) => id.trim()).filter(Boolean)),
     runwaySecret: process.env.RUNWAYML_API_SECRET?.trim(),
+    paymentMode: process.env.PAYMENTS_MODE === "mock" ? "mock" : "disabled" as "mock" | "disabled",
   };
 }

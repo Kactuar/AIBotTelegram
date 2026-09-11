@@ -13,6 +13,7 @@ export function extensionFor(contentType: string | null) { return contentType ? 
 export function projectDirectory(userId: string, projectId: string) { return path.join(appConfig().storageRoot, userId, projectId); }
 export function inputPath(userId: string, projectId: string, extension: string) { return path.join(projectDirectory(userId, projectId), `input${extension}`); }
 export function resultPath(userId: string, projectId: string) { return path.join(projectDirectory(userId, projectId), "result.mp4"); }
+export function watermarkedResultPath(userId: string, projectId: string) { return path.join(projectDirectory(userId, projectId), "trial-watermarked.mp4"); }
 
 export async function canAcceptUpload() {
   const root = appConfig().storageRoot;

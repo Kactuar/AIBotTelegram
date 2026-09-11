@@ -7,7 +7,8 @@ import { claimQueuedProject, db, expiredResults, failProject, finishProject, get
 import { translations } from "@/src/bot/i18n";
 import { downloadSignature } from "@/src/lib/auth";
 import { downloadRunwayOutput, runwayTask, startRunwayEdit } from "@/src/lib/runway";
-import { removeFile, resultPath } from "@/src/lib/storage";
+import { removeFile, resultPath, watermarkedResultPath } from "@/src/lib/storage";
+import { createWatermark } from "@/src/lib/watermark";
 
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 let lastCleanup = 0;
@@ -49,7 +50,13 @@ async function processRunningProjects() {
         if (!output) throw new Error("provider_empty_output");
         const target = resultPath(project.userId, project.id);
         await downloadRunwayOutput(output, target);
-        finishProject(project.id, target);
+        const latest = projectById(project.id);
+        const watermarked = latest?.isTrial && !latest.trialUnlockedAt ? watermarkedResultPath(project.userId, project.id) : undefined;
+        if (watermarked) {
+          try { await createWatermark(target, watermarked); }
+          catch (error) { await removeFile(target); await removeFile(watermarked); throw error; }
+        }
+        finishProject(project.id, target, watermarked);
         await notifyCompleted(project.id);
       }
     } catch (error) {
@@ -64,7 +71,8 @@ async function cleanup() {
   lastCleanup = Date.now();
   for (const project of expiredResults()) {
     await removeFile(project.resultPath);
-    updateProject(project.id, { resultPath: null });
+    await removeFile(project.watermarkedResultPath);
+    updateProject(project.id, { resultPath: null, watermarkedResultPath: null });
   }
 }
 

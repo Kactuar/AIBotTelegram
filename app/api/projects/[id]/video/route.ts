@@ -9,9 +9,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const url = new URL(request.url);
   if (!validDownloadSignature(id, url.searchParams.get("expires") || "", url.searchParams.get("signature"))) return new NextResponse("Expired link", { status: 403 });
   const project = projectById(id);
-  if (!project?.resultPath || project.status !== "completed") return new NextResponse("Not found", { status: 404 });
+  const target = project?.isTrial && !project.trialUnlockedAt ? project.watermarkedResultPath : project?.resultPath;
+  if (!target || project?.status !== "completed") return new NextResponse("Not found", { status: 404 });
   try {
-    const file = await fs.readFile(project.resultPath);
+    const file = await fs.readFile(target);
     return new NextResponse(file, { headers: { "Content-Type": "video/mp4", "Content-Disposition": `attachment; filename="brandly-${id}.mp4"`, "Cache-Control": "private, no-store" } });
   } catch { return new NextResponse("Not found", { status: 404 }); }
 }

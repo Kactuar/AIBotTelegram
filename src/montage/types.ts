@@ -33,6 +33,9 @@ export interface ProjectRecord {
   prompt: string | null;
   inputPath: string | null;
   resultPath: string | null;
+  watermarkedResultPath: string | null;
+  isTrial: boolean;
+  trialUnlockedAt: string | null;
   runwayTaskId: string | null;
   status: ProjectStatus;
   errorCode: string | null;

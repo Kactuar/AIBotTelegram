@@ -1,0 +1,1 @@
+export default function OfferPage() { return <main style={{ maxWidth: 560, margin: "40px auto", padding: 24, fontFamily: "Arial, sans-serif" }}><h1>Публичная оферта</h1><p>Это временная страница-заглушка. Полный юридический текст будет опубликован до запуска реальных платежей.</p></main>; }
