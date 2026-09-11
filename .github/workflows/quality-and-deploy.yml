@@ -24,7 +24,13 @@ jobs:
 
       - run: npm ci
       - run: npm run verify
+      # Next imports the webhook route while collecting route metadata. The bot
+      # is constructed during that import, so CI needs a syntactically valid
+      # placeholder. Production builds still read the real value from
+      # /srv/aibot/.env through .env.local on the server.
       - run: npm run build
+        env:
+          BOT_TOKEN: ci-build-placeholder
 
   deploy:
     name: Deploy verified commit
