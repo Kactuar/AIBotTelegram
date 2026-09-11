@@ -9,7 +9,8 @@ import os from "node:os";
 import path from "node:path";
 import { composePrompt } from "../src/lib/prompt";
 import { defaultMontageSettings } from "../src/montage/types";
-import { verifyTelegramInitData } from "../src/lib/auth";
+import { readSession, verifyTelegramInitData } from "../src/lib/auth";
+import { POST as authorizeTelegram } from "../app/api/auth/telegram/route";
 import { closeDatabase, createProject, failProject, getUser, hasActiveProject, reserveGeneration, updateProject } from "../src/lib/database";
 assert.ok(mockVideos.length > 0, "At least one mock video is required");
 assert.equal(videoListKeyboard(mockVideos).inline_keyboard.length, mockVideos.length);
@@ -51,6 +52,41 @@ assert.equal(reserveGeneration(project.id, "42", prompt).ok, true);
 assert.equal(getUser("42").balance, 77);
 failProject(project.id, "provider_failed");
 assert.equal(getUser("42").balance, 100);
-closeDatabase();
-fs.rmSync(path.dirname(verificationDb), { recursive: true, force: true });
-console.info("Keyboards, prompt ordering, Telegram initData and mock token reservation passed.");
+async function verifyAuthRoute() {
+  const signedData = (id: number) => {
+    const params = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), user: JSON.stringify({ id, first_name: "Test" }) });
+    const checkString = [...params.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${key}=${value}`).join("\n");
+    params.set("hash", crypto.createHmac("sha256", secret).update(checkString).digest("hex"));
+    return params;
+  };
+  const authorize = (initData?: string) => authorizeTelegram(new Request("http://verification.local/api/auth/telegram", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData }),
+  }));
+  const allowed = await authorize(signedData(42).toString());
+  assert.equal(allowed.status, 200);
+  const payload = await allowed.json();
+  assert.equal(payload.user.id, "42");
+  assert.equal(payload.user.allowed, true);
+  assert.equal(payload.user.balance, 100);
+  assert.deepEqual(payload.settings, defaultMontageSettings);
+  assert.equal(readSession(allowed.cookies.get("aibot_session")?.value), "42");
+  assert.ok(allowed.headers.get("set-cookie")?.includes("HttpOnly"));
+
+  const ordinary = await authorize(signedData(43).toString());
+  assert.equal(ordinary.status, 200);
+  assert.deepEqual((await ordinary.json()).user, { id: "43", firstName: "Test", allowed: false, balance: 0 });
+
+  const forged = signedData(42);
+  forged.set("user", JSON.stringify({ id: 44 }));
+  for (const input of [undefined, forged.toString()]) {
+    const rejected = await authorize(input);
+    assert.equal(rejected.status, 401);
+    assert.equal(rejected.headers.get("set-cookie"), null);
+  }
+  console.info("Keyboards, prompts, token reservation and Telegram auth route (signed data, session cookie, settings, allowlist, forged/missing data) passed.");
+}
+
+verifyAuthRoute().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => {
+  closeDatabase();
+  fs.rmSync(path.dirname(verificationDb), { recursive: true, force: true });
+});
