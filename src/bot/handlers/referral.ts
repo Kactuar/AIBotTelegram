@@ -1,18 +1,13 @@
 import type { Bot, Context } from "grammy";
 import { REFERRAL } from "@/src/bot/keyboards/main";
+import { languageOf, translations } from "@/src/bot/i18n";
+
 async function referralText(ctx: Context) {
+  const t = translations[languageOf(ctx)];
   const me = await ctx.api.getMe();
   const code = (ctx.from?.id ?? 0).toString(36).toUpperCase();
-  const link = me.username ? `https://t.me/${me.username}?start=${code}` : "Недоступна: у бота нет username.";
-  return `Приглашайте друзей — получайте токены.
-
-За каждую успешную оплату приглашённого друга вы получаете 10% от купленных им токенов.
-
-Ваша ссылка:
-${link}
-
-Приглашено: 0 человек
-Заработано: 0 токенов`;
+  const link = me.username ? `https://t.me/${me.username}?start=${code}` : t.noUsername;
+  return t.referral(link);
 }
 export function registerReferralHandlers(bot: Bot<Context>) {
   bot.hears(REFERRAL, async (ctx) => ctx.reply(await referralText(ctx)));

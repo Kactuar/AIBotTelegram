@@ -3,7 +3,8 @@ dotenv.config({ path: process.env.AIBOT_ENV_PATH || ".env.local" });
 import fs from "node:fs/promises";
 import { Api } from "grammy";
 import { appConfig } from "@/src/lib/config";
-import { claimQueuedProject, db, expiredResults, failProject, finishProject, projectById, updateProject } from "@/src/lib/database";
+import { claimQueuedProject, db, expiredResults, failProject, finishProject, getBotLanguage, projectById, updateProject } from "@/src/lib/database";
+import { translations } from "@/src/bot/i18n";
 import { downloadSignature } from "@/src/lib/auth";
 import { downloadRunwayOutput, runwayTask, startRunwayEdit } from "@/src/lib/runway";
 import { removeFile, resultPath } from "@/src/lib/storage";
@@ -16,7 +17,7 @@ async function notifyCompleted(projectId: string) {
   if (!project) return;
   const expires = String(Math.floor(Date.now() / 1000) + 72 * 60 * 60);
   const link = `${appConfig().appUrl}/api/projects/${project.id}/video?expires=${expires}&signature=${downloadSignature(project.id, expires)}`;
-  await new Api(appConfig().botToken).sendMessage(project.userId, `Ролик готов. Скачать его можно по ссылке: ${link}`);
+  await new Api(appConfig().botToken).sendMessage(project.userId, translations[getBotLanguage(project.userId)].completed(link));
 }
 
 async function processProject() {

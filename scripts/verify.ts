@@ -11,13 +11,14 @@ import { composePrompt } from "../src/lib/prompt";
 import { defaultMontageSettings } from "../src/montage/types";
 import { readSession, verifyTelegramInitData } from "../src/lib/auth";
 import { POST as authorizeTelegram } from "../app/api/auth/telegram/route";
+import { verifyLanguage } from "./verify-language";
 import { closeDatabase, createProject, failProject, getUser, hasActiveProject, reserveGeneration, updateProject } from "../src/lib/database";
 assert.ok(mockVideos.length > 0, "At least one mock video is required");
 assert.equal(videoListKeyboard(mockVideos).inline_keyboard.length, mockVideos.length);
 assert.equal(tariffsKeyboard(tariffs).inline_keyboard.length, tariffs.length + 1);
 assert.ok(tariffs.every((tariff) => tariff.tokens > 0 && tariff.priceRubles > 0));
 const buttonStyle = (row: number, column: number) => {
-  const button = mainKeyboard.keyboard[row][column];
+  const button = mainKeyboard().keyboard[row][column];
   return typeof button === "string" || !("style" in button) ? undefined : button.style;
 };
 assert.equal(buttonStyle(0, 0), "primary");
@@ -86,7 +87,7 @@ async function verifyAuthRoute() {
   console.info("Keyboards, prompts, token reservation and Telegram auth route (signed data, session cookie, settings, allowlist, forged/missing data) passed.");
 }
 
-verifyAuthRoute().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => {
+verifyAuthRoute().then(verifyLanguage).catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => {
   closeDatabase();
   fs.rmSync(path.dirname(verificationDb), { recursive: true, force: true });
 });

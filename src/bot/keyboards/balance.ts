@@ -1,12 +1,13 @@
 import { InlineKeyboard } from "grammy";
 import type { Tariff } from "@/src/bot/types";
-export const balanceKeyboard = new InlineKeyboard().text("💎 Пополнить баланс", "balance:topup").row().text("🎁 Пригласить друга", "referral:show");
-export function tariffsKeyboard(tariffs: Tariff[]) {
+import { translations, type Language } from "@/src/bot/i18n";
+export const balanceKeyboard = (language: Language = "ru") => new InlineKeyboard().text(translations[language].topUp, "balance:topup").row().text(translations[language].invite, "referral:show");
+export function tariffsKeyboard(tariffs: Tariff[], language: Language = "ru") {
   const keyboard = new InlineKeyboard();
   tariffs.forEach((tariff, index) => {
     if (index > 0) keyboard.row();
-    keyboard.text(`${tariff.priceRubles} ₽ — ${tariff.tokens} токенов (~${tariff.estimatedVideos} роликов)`, `payment:${tariff.tokens}`);
+    keyboard.text(translations[language].tariff(tariff.priceRubles, tariff.tokens, tariff.estimatedVideos), `payment:${tariff.tokens}`);
   });
   keyboard.row();
-  return keyboard.text("← Назад", "balance:back");
+  return keyboard.text(translations[language].back, "balance:back");
 }

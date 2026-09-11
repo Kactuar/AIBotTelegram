@@ -1,5 +1,6 @@
 import { InlineKeyboard } from "grammy";
 import type { VideoProject } from "@/src/bot/types";
+import { translations, type Language } from "@/src/bot/i18n";
 const statusIcon: Record<VideoProject["status"], string> = { draft: "📝", processing: "⏳", completed: "✅", failed: "❌" };
 export function videoListKeyboard(videos: VideoProject[]) {
   const keyboard = new InlineKeyboard();
@@ -9,8 +10,8 @@ export function videoListKeyboard(videos: VideoProject[]) {
   });
   return keyboard;
 }
-export function videoCardKeyboard(video: VideoProject) {
+export function videoCardKeyboard(video: VideoProject, language: Language) {
   const keyboard = new InlineKeyboard();
-  if (video.downloadUrl) keyboard.url("↓ Скачать", video.downloadUrl).row();
-  return keyboard.text("← Назад к списку", "videos:list");
+  if (video.downloadUrl) keyboard.url(translations[language].download, video.downloadUrl).row();
+  return keyboard.text(translations[language].backToVideos, "videos:list");
 }

@@ -1,2 +1,7 @@
 import { InlineKeyboard } from "grammy";
-export function supportKeyboard(url: string) { return new InlineKeyboard().url("🎧 Написать в поддержку", url); }
+import { translations, type Language } from "@/src/bot/i18n";
+export function supportKeyboard(language: Language, url?: string) {
+  const keyboard = new InlineKeyboard().text("ⓘ FAQ", "support:faq").row();
+  if (url) keyboard.url(translations[language].operator, url).row();
+  return keyboard.text(language === "ru" ? "🇬🇧 English" : "🇷🇺 Русский", language === "ru" ? "language:en" : "language:ru");
+}

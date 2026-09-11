@@ -1,16 +1,20 @@
 import { Keyboard } from "grammy";
-export const BEGIN_MONTAGE = "▷ Начать монтаж";
-export const BALANCE = "▣ Баланс";
-export const MY_VIDEOS = "▣ Мои ролики";
-export const REFERRAL = "🎁 Реф. программа";
-export const SUPPORT = "🎧 Поддержка";
-export const mainKeyboard = new Keyboard()
-  .text(BEGIN_MONTAGE, "primary")
+import { translations, type Language } from "@/src/bot/i18n";
+export const BEGIN_MONTAGE = [translations.ru.menu.montage, translations.en.menu.montage];
+export const BALANCE = [translations.ru.menu.balance, translations.en.menu.balance];
+export const MY_VIDEOS = [translations.ru.menu.videos, translations.en.menu.videos];
+export const REFERRAL = [translations.ru.menu.referral, translations.en.menu.referral];
+export const SUPPORT = [translations.ru.menu.support, translations.en.menu.support];
+export function mainKeyboard(language: Language = "ru") {
+  const labels = translations[language].menu;
+  return new Keyboard()
+  .text(labels.montage, "primary")
   .row()
-  .text(BALANCE, "success")
-  .text(MY_VIDEOS, "primary")
+  .text(labels.balance, "success")
+  .text(labels.videos, "primary")
   .row()
-  .text(REFERRAL)
-  .text(SUPPORT)
+  .text(labels.referral)
+  .text(labels.support)
   .resized()
   .persistent();
+}

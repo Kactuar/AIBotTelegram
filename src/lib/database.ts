@@ -15,6 +15,10 @@ export function db() {
   database = new Database(filename);
   database.pragma("journal_mode = WAL");
   database.exec(`
+    CREATE TABLE IF NOT EXISTS bot_languages (
+      telegram_id TEXT PRIMARY KEY,
+      language TEXT NOT NULL CHECK (language IN ('ru', 'en'))
+    );
     CREATE TABLE IF NOT EXISTS users (
       telegram_id TEXT PRIMARY KEY,
       balance INTEGER NOT NULL,
@@ -43,6 +47,15 @@ export function db() {
 }
 
 const now = () => new Date().toISOString();
+
+export function getBotLanguage(telegramId: string): "ru" | "en" {
+  const row = db().prepare("SELECT language FROM bot_languages WHERE telegram_id = ?").get(telegramId) as { language: "ru" | "en" } | undefined;
+  return row?.language ?? "ru";
+}
+
+export function setBotLanguage(telegramId: string, language: "ru" | "en") {
+  db().prepare("INSERT INTO bot_languages (telegram_id, language) VALUES (?, ?) ON CONFLICT(telegram_id) DO UPDATE SET language = excluded.language").run(telegramId, language);
+}
 
 export function getOrCreateUser(telegramId: string, isAllowed: boolean) {
   const database = db();

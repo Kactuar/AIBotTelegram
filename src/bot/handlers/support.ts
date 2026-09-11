@@ -1,10 +1,27 @@
 import type { Bot, Context } from "grammy";
-import { SUPPORT } from "@/src/bot/keyboards/main";
+import { SUPPORT, mainKeyboard } from "@/src/bot/keyboards/main";
 import { supportKeyboard } from "@/src/bot/keyboards/referral";
+import { languageOf, translations, type Language } from "@/src/bot/i18n";
+import { setBotLanguage } from "@/src/lib/database";
+
+const supportText = (language: Language) => translations[language].support + (process.env.SUPPORT_URL ? "" : `\n\n${translations[language].noOperator}`);
+
 export function registerSupportHandlers(bot: Bot<Context>) {
   bot.hears(SUPPORT, async (ctx) => {
-    const supportUrl = process.env.SUPPORT_URL;
-    if (!supportUrl) return ctx.reply("Поддержка пока недоступна. Настройте SUPPORT_URL.");
-    await ctx.reply("Если у вас возникли вопросы, напишите в поддержку.", { reply_markup: supportKeyboard(supportUrl) });
+    const language = languageOf(ctx);
+    await ctx.reply(supportText(language), { reply_markup: supportKeyboard(language, process.env.SUPPORT_URL) });
+  });
+  bot.callbackQuery(/^language:(ru|en)$/, async (ctx) => {
+    const language = ctx.match[1] as Language;
+    setBotLanguage(String(ctx.from.id), language);
+    await ctx.answerCallbackQuery();
+    // A new message updates Telegram's persistent reply keyboard as well.
+    await ctx.reply(translations[language].languageSaved, { reply_markup: mainKeyboard(language) });
+    await ctx.editMessageText(supportText(language), { reply_markup: supportKeyboard(language, process.env.SUPPORT_URL) });
+  });
+  bot.callbackQuery("support:faq", async (ctx) => {
+    const language = languageOf(ctx);
+    await ctx.answerCallbackQuery();
+    await ctx.reply(translations[language].faq);
   });
 }
