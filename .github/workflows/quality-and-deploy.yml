@@ -43,21 +43,19 @@ jobs:
         shell: bash
         env:
           SSH_KEY: ${{ secrets.HETZNER_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.HETZNER_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
           test -n "$SSH_KEY"
-          test -n "$KNOWN_HOSTS"
           install -d -m 700 ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/hetzner_key
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # A server host key is public by design. Keeping it here pins this
+          # workflow to the Hetzner host and makes an unexpected key fail closed.
+          printf '%s\n' '95.216.200.181 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFIu8Miij6NJDncq+VKHWtzXmQ5accrKEiN0rRJXHqkL' > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/hetzner_key ~/.ssh/known_hosts
 
       - name: Deploy the verified SHA
         shell: bash
         env:
-          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
-          HETZNER_USER: ${{ secrets.HETZNER_USER }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
@@ -65,5 +63,5 @@ jobs:
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
-            "$HETZNER_USER@$HETZNER_HOST" \
+            deploy@95.216.200.181 \
             "bash /srv/aibot/current/deploy/deploy-prod.sh '$COMMIT_SHA'"

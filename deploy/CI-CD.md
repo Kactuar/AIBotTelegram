@@ -25,15 +25,9 @@ This leaves the existing `github.com` identity used by Bookilion unchanged.
 
 ## GitHub Actions access to Hetzner
 
-Generate a separate key locally for the GitHub Actions runner. Add its public half to `/home/deploy/.ssh/authorized_keys`; add its private half only as the `HETZNER_SSH_KEY` GitHub Actions secret. The other required repository secrets are:
+Generate a separate key locally for the GitHub Actions runner. Add its public half to `/home/deploy/.ssh/authorized_keys`; add its private half only as the `HETZNER_SSH_KEY` GitHub Actions secret.
 
-```text
-HETZNER_HOST=95.216.200.181
-HETZNER_USER=deploy
-HETZNER_KNOWN_HOSTS=95.216.200.181 ssh-ed25519 <server-public-host-key>
-```
-
-Read the trusted host key from the already connected server with:
+The server address, user and public SSH host key are pinned in the workflow. They are identifiers, not credentials, and keeping them in version control lets a review show exactly which host an automated deploy may contact. Read the trusted host key from the already connected server with:
 
 ```bash
 printf '95.216.200.181 '
