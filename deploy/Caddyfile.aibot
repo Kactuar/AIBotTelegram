@@ -1,0 +1,11 @@
+# Additional Caddy site. Keep existing Bookilion sites unchanged.
+http://95.216.200.181 {
+  root * /var/www/acme
+  handle /.well-known/acme-challenge/* { file_server }
+  handle { redir https://{host}{uri} permanent }
+}
+
+https://95.216.200.181 {
+  tls /etc/caddy/certs/aibot/fullchain.pem /etc/caddy/certs/aibot/privkey.pem
+  reverse_proxy 127.0.0.1:3010
+}

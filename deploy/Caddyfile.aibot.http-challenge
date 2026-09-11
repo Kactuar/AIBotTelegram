@@ -1,0 +1,6 @@
+# Temporary first stage: install this site, validate and reload Caddy before
+# Certbot requests the certificate. It owns only the raw server IP.
+http://95.216.200.181 {
+  root * /var/www/acme
+  file_server
+}
