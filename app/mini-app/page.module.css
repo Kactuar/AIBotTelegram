@@ -9,5 +9,23 @@
 .generate { width:100%; margin:29px 0 9px; min-height:79px; border:0; border-radius:40px; color:#fff; background:linear-gradient(110deg,#ffbb35,#ee3d78 48%,#8126d3); box-shadow:0 11px 21px #d9468a40; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:19px; font-weight:800; }.generate svg { width:25px; height:25px; fill:currentColor; }.generate small { font-size:13px; }.generate:disabled { opacity:.62; }.status { min-height:35px; color:var(--muted); text-align:center; font-size:13px; margin:7px 0; }
 .nav { position:fixed; z-index:4; bottom:0; left:0; right:0; height:88px; padding:0 max(12px,calc((100vw - 560px)/2 + 12px)) env(safe-area-inset-bottom); display:flex; justify-content:space-around; box-sizing:border-box; background:var(--paper); box-shadow:0 -5px 18px #332a3b10; }.nav button { position:relative; border:0; background:transparent; color:#9792a5; min-width:55px; padding:25px 0 4px; display:flex; flex-direction:column; gap:3px; align-items:center; font-size:12px; }.nav svg { width:24px; height:24px; }.navActive { color:#292330!important; font-weight:700; }.navActive svg { background:linear-gradient(135deg,#ffb53c,#e22d84,#7028de); color:#fff; fill:#fff; stroke:#fff; width:55px; height:55px; padding:17px; box-sizing:border-box; border-radius:50%; margin-top:-43px; box-shadow:0 6px 14px #d72d8d55; }.nav em { position:absolute; top:20px; right:8px; width:15px; height:15px; line-height:15px; border-radius:50%; background:#ec3e7f; color:#fff; font-size:10px; font-style:normal; }.placeholder { min-height:100dvh; max-width:560px; box-sizing:border-box; margin:auto; padding:48px 24px; background:#f5f4f9; color:#272230; text-align:center; }.placeholder button,.modal button { border:0; border-radius:24px; padding:15px 25px; background:#221e29; color:#fff; font-weight:800; }
 .modalBack { position:fixed; z-index:10; inset:0; display:grid; place-items:center; padding:20px; background:#0008; }.modal { width:min(100%,480px); border-radius:31px; background:#fff; padding:30px; box-sizing:border-box; }.modalVideo { position:relative; overflow:hidden; width:min(100%,378px); height:min(65vh,670px); aspect-ratio:9/16; margin:auto; border-radius:22px; background:#29252c; }.modalVideo video { width:100%; height:100%; object-fit:cover; }.modal button { margin-top:20px; font-size:16px; }
-@media (max-width:380px) { .app { padding-left:15px; padding-right:15px; }.preview { width:310px; }.styles button { padding:0 15px; }.colors button { padding:0 12px; }.colors { gap:5px; } }
+.requirementsLink { display:flex; align-items:center; gap:4px; padding:0; border:0; background:none; color:#9893a6; font:inherit; text-decoration:underline; cursor:pointer; }
+.requirements { width:calc(100% - 40px); max-width:518px; max-height:calc(100dvh - 40px); margin:auto; padding:0; border:0; border-radius:32px; box-sizing:border-box; background:#fff; color:#19171e; font-family:Arial,sans-serif; overflow:auto; overscroll-behavior:contain; }
+.requirements::backdrop { background:#0008; }
+.requirementsContent { padding:30px 28px 25px; }
+.requirementsImages { overflow:hidden; border-radius:22px; aspect-ratio:450/504; background:#14151a; }
+.requirementsTrack { display:flex; height:100%; transition:transform .4s ease-in-out; }
+.requirementsTrack img { display:block; flex:0 0 100%; width:100%; min-width:0; height:100%; object-fit:cover; }
+.requirementsDots { display:flex; justify-content:center; align-items:center; height:36px; gap:0; }
+.requirementsDots button { display:grid; place-items:center; min-width:24px; height:28px; padding:0 4px; border:0; background:none; cursor:pointer; }
+.requirementsDots span { width:8px; height:8px; border-radius:8px; background:#c5c1d1; }
+.requirementsDots button[aria-pressed="true"] span { width:20px; background:#19171e; }
+.requirements h2 { margin:6px 0 10px; font-size:24px; line-height:1.2; font-weight:800; }
+.requirements p { margin:0 0 28px; color:#5f5a6e; font-size:18px; font-weight:500; line-height:1.5; }
+.requirements p:last-of-type { margin-bottom:26px; }
+.requirementsClose { padding:19px 25px; border:0; border-radius:32px; background:#19171e; color:#fff; font:800 18px Arial,sans-serif; box-shadow:0 8px 18px #19171e26; cursor:pointer; }
+.hint { flex-shrink:0; min-width:24px; min-height:24px; padding:2px; border:0; background:none; cursor:pointer; }
+.helpImage { display:block; width:100%; height:auto; margin:0 auto 24px; border-radius:22px; }
+.helpPortrait { max-width:354px; }
+@media (max-width:380px) { .app { padding-left:15px; padding-right:15px; }.preview { width:310px; }.styles button { padding:0 15px; }.colors button { padding:0 12px; }.colors { gap:5px; } .requirementsContent { padding:20px; } .requirements h2 { font-size:22px; } .requirements p { font-size:16px; } }
 @media (prefers-reduced-motion: reduce) { .app,.app * { transition:none!important; scroll-behavior:auto!important; } }
