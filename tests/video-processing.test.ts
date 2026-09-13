@@ -14,11 +14,11 @@ afterEach(() => {
   delete process.env.STORAGE_ROOT;
 });
 
-async function fixtureVideo(target: string, seconds: number) {
+async function fixtureVideo(target: string, seconds: number, size = "360x640") {
   const executable = ffmpegPath;
   if (!executable) throw new Error("ffmpeg-static is required for video processing tests");
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(executable, ["-y", "-f", "lavfi", "-i", `color=c=blue:s=360x640:d=${seconds}`, "-c:v", "libx264", "-pix_fmt", "yuv420p", target], { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(executable, ["-y", "-f", "lavfi", "-i", `color=c=blue:s=${size}:d=${seconds}`, "-c:v", "libx264", "-pix_fmt", "yuv420p", target], { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
     child.stderr?.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
     child.on("error", reject);
@@ -31,12 +31,13 @@ describe("FFmpeg video preparation", () => {
     const fixture = createTestDatabase(); remove = fixture.remove;
     process.env.STORAGE_ROOT = path.join(fixture.root, "storage");
     const input = path.join(fixture.root, "input.mp4");
-    await fixtureVideo(input, 3);
+    await fixtureVideo(input, 3, "640x360");
     const prepared = await prepareVideoSegments(input, "42", "short");
     expect(prepared.count).toBe(1);
     const info = await inspectVideo(prepared.paths[0]);
     expect(info.height).toBeLessThanOrEqual(720);
     expect(info.width).toBeLessThanOrEqual(720);
+    expect(info.width).toBeGreaterThan(info.height);
   });
 
   it("splits long videos, preserves order and concatenates the edited parts", async () => {

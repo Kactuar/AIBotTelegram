@@ -51,26 +51,27 @@ export interface MontagePromptContext {
 }
 
 const palette: Record<MontageSettings["color"], string> = {
-  amber: "Warm amber and golden-yellow accents.",
-  azure: "Clean azure-blue accents.",
-  lime: "Fresh lime-green accents.",
-  crimson: "Deep crimson-red accents.",
+  amber: "Accent color: warm amber and golden-yellow.",
+  azure: "Accent color: clean azure-blue.",
+  lime: "Accent color: fresh lime-green.",
+  crimson: "Accent color: deep crimson-red.",
 };
 
 export function composePrompt(settings: MontageSettings, context: MontagePromptContext = {}): string {
   const blocks = [
-    "Edit this vertical social video as a single continuous production. Preserve the speaker, framing, spoken meaning, original language, lip sync, natural motion and existing audio.",
-    "Do not add brands, logos, watermarks, unsupported facts or unrelated objects. Keep the source aspect ratio and maintain visual continuity across cuts.",
-    "Apply a premium Glass Reels visual style: clean modern typography, soft contrast and restrained editorial composition.",
+    "Edit and modernize the uploaded video into a stylish, youth-oriented Instagram/Reels cut. Keep the source footage as the base: enhance it and add elements to it; do not replace it or generate a different video.",
+    "Preserve the original people, actions, speech meaning, language, lip sync, key visuals and audio. Improve pacing, cuts, transitions and framing. Support portrait, landscape and square sources while keeping the main subject visible.",
+    "Add modern synchronized animated subtitles in the source language. Keep them readable, inside safe margins and off faces; use the selected color for subtitles, highlights and graphics.",
+    "Use current creator-style kinetic type and subtle Glass elements. Add only elements that support the source; no logos, watermarks, invented facts or unrelated objects.",
     palette[settings.color],
   ];
-  if (settings.trimVideo) blocks.push("Remove pauses, repetitions and speech filler where possible while preserving meaning and natural pacing; this is best effort and the output duration remains the source duration.");
-  if (settings.generateHook && context.segmentIndex !== 2) blocks.push("Add a short compelling visual hook or text hook during the first two seconds, derived only from the source content and without inventing facts or changing the speaker's meaning.");
-  if (settings.soundEffects) blocks.push("Add short, subtle sound effects at meaningful transitions without covering speech or adding background music.");
-  if (settings.mediaCards) blocks.push("Add minimal illustrative media cards only where they explain the spoken content; do not invent facts, brands or numbers.");
-  if (settings.emojiSubtitles) blocks.push("Add synchronized subtitles in the source language with sparse, semantically appropriate emoji, without changing the spoken text or meaning.");
-  if (settings.badges) blocks.push("Highlight already-spoken key phrases and numbers with compact glass badges and cards; do not create new information.");
-  if (settings.cameraMotion) blocks.push("Add gentle digital push-ins and pans without warping the face, aggressive cropping or abrupt motion.");
-  if (context.segmentIndex === 2 && context.segmentCount === 2) blocks.push("This is the continuation of the previous segment. Do not create a new hook or introduction, restart the narrative, or change the established Glass style and color.");
+  if (settings.trimVideo) blocks.push("Tighten pauses, repetitions and filler without changing meaning; preserve the overall duration.");
+  if (settings.generateHook && context.segmentIndex !== 2) blocks.push("Add a short source-based visual or text hook in the first two seconds; invent no claims.");
+  if (settings.soundEffects) blocks.push("Add subtle sound effects at key transitions; keep speech clear and add no music.");
+  if (settings.mediaCards) blocks.push("Add minimal source-relevant media cards; invent no facts, brands or numbers.");
+  if (settings.emojiSubtitles) blocks.push("Add sparse relevant emoji to subtitles without changing their text or meaning.");
+  if (settings.badges) blocks.push("Show already-spoken key phrases and numbers in compact Glass cards; invent nothing.");
+  if (settings.cameraMotion) blocks.push("Add gentle digital push-ins and pans without face distortion, harsh crops or abrupt motion.");
+  if (context.segmentIndex === 2 && context.segmentCount === 2) blocks.push("Continuation of the previous segment: keep the same style and color; no new hook, intro or narrative restart.");
   return blocks.join("\n\n");
 }

@@ -80,7 +80,7 @@ export default function MontageScreen({ authorized, authPending, authError, bala
     const video = document.createElement("video");
     video.src = url;
     video.onloadedmetadata = () => {
-      if (video.duration < 2 || video.duration > 30 || video.videoHeight <= video.videoWidth) { URL.revokeObjectURL(url); setMessage(t.montage.videoInvalid); return; }
+      if (video.duration < 2 || video.duration > 30) { URL.revokeObjectURL(url); setMessage(t.montage.videoInvalid); return; }
       if (preview) URL.revokeObjectURL(preview);
       setPreview(url); setSelectedFile(file); setMessage(t.montage.ready);
     };

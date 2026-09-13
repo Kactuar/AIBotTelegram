@@ -42,7 +42,7 @@ function parseInfo(stderr: string): VideoInfo {
 export async function inspectVideo(input: string, validateSource = true) {
   const stderr = await run(["-i", input, "-map", "0:v:0", "-frames:v", "1", "-f", "null", "-"], "video_probe_failed");
   const info = parseInfo(stderr);
-  if (validateSource && (info.duration < 2 || info.duration > MAX_DURATION_SECONDS + 0.05 || info.height <= info.width)) throw new Error("invalid_video_dimensions_or_duration");
+  if (validateSource && (info.duration < 2 || info.duration > MAX_DURATION_SECONDS + 0.05)) throw new Error("invalid_video_dimensions_or_duration");
   return info;
 }
 

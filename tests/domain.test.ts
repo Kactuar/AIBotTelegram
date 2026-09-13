@@ -9,10 +9,15 @@ import { videoListKeyboard } from "@/src/bot/keyboards/videos";
 describe("pure domain and bot helpers", () => {
   it("keeps prompt composition and payment catalogue unchanged", () => {
     const prompt = composePrompt({ ...defaultMontageSettings, color: "crimson", generateHook: true, badges: true });
-    expect(prompt).toContain("Deep crimson-red accents.");
-    expect(prompt).toContain("compelling visual hook");
-    expect(prompt).toContain("glass badges");
+    expect(prompt).toContain("deep crimson-red");
+    expect(prompt).toContain("Instagram/Reels");
+    expect(prompt).toContain("modern synchronized animated subtitles");
+    expect(prompt).toContain("source footage as the base");
+    expect(prompt).toContain("do not replace it or generate a different video");
+    expect(prompt).toContain("source-based visual or text hook");
+    expect(prompt).toContain("compact Glass cards");
     expect(prompt).not.toContain("sound design");
+    expect(prompt).not.toContain("emoji");
     expect(paymentPackages.map((item) => item.stars)).toEqual([1118, 2618, 4868]);
     expect(priceFor(paymentPackages[1], "foreign_card_2").label).toBe("$43.00");
   });
@@ -21,14 +26,14 @@ describe("pure domain and bot helpers", () => {
     const settings = { ...defaultMontageSettings, generateHook: true, soundEffects: true, mediaCards: true, emojiSubtitles: true, badges: true, cameraMotion: true };
     const first = composePrompt(settings, { segmentIndex: 1, segmentCount: 2 });
     const second = composePrompt(settings, { segmentIndex: 2, segmentCount: 2 });
-    expect(first).toContain("compelling visual hook");
+    expect(first).toContain("source-based visual or text hook");
     expect(first).toContain("sound effects");
     expect(first).toContain("media cards");
     expect(first).toContain("emoji");
-    expect(first).toContain("glass badges");
+    expect(first).toContain("compact Glass cards");
     expect(first).toContain("digital push-ins");
-    expect(second).not.toContain("compelling visual hook");
-    expect(second).toContain("continuation of the previous segment");
+    expect(second).not.toContain("source-based visual or text hook");
+    expect(second).toContain("Continuation of the previous segment");
   });
 
   it("keeps menus and tariff keyboards populated", () => {
