@@ -62,13 +62,13 @@ export default function ProfileScreen({ authorized, header, nav, language, onLan
     <section className={styles.profileIdentity}><h1>{name}</h1>{profile?.username && <p>@{profile.username}</p>}</section>
     <section className={styles.profileCount}><span className={styles.profileIcon}><Icon name="films" /></span><div><b>{profile ? profile.completedVideos : "—"}</b><p>{profile ? t.profile.completed(profile.completedVideos) : t.profile.videos(0)}</p></div></section>
     <section className={styles.profileList}>
-      <button onClick={onBalance}><span><Icon name="coins" />{t.profile.topUp}</span><i>›</i></button>
-      <button onClick={() => setSupportOpen(true)}><span><Icon name="help" />{t.profile.support}</span><i>›</i></button>
-      <button onClick={() => open(links.officialChannelUrl)}><span><Icon name="people" />{t.profile.channel}</span><i>›</i></button>
+      <button onClick={onBalance}><span><Icon name="coins" />{t.profile.topUp}</span><svg className={styles.profileChevron} viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
+      <button onClick={() => setSupportOpen(true)}><span><Icon name="support" />{t.profile.support}</span><svg className={styles.profileChevron} viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
+      <button onClick={() => open(links.officialChannelUrl)}><span><Icon name="channel" />{t.profile.channel}</span><svg className={styles.profileChevron} viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
     </section>
     <section className={styles.languageRow}><b>{t.profile.language}</b><div role="group" aria-label={t.profile.language}><button aria-pressed={language === "ru"} onClick={() => void setLocale("ru")}>Русский</button><button aria-pressed={language === "en"} onClick={() => void setLocale("en")}>English</button></div></section>
     <h2 className={styles.profileLabel}>{t.profile.documents}</h2>
-    <section className={styles.profileList}><a href={`/offer?lang=${language}`}><span>{t.profile.offer}</span><i>›</i></a><a href={`/privacy?lang=${language}`}><span>{t.profile.privacy}</span><i>›</i></a></section>
+    <section className={styles.profileList}><a href={`/offer?lang=${language}`}><span>{t.profile.offer}</span><svg className={styles.profileChevron} viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></a><a href={`/privacy?lang=${language}`}><span>{t.profile.privacy}</span><svg className={styles.profileChevron} viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></a></section>
     {message && <p className={styles.status} role="status">{message}</p>}
   </section>{nav}</>;
 }

@@ -7,7 +7,7 @@ import { registerBalanceHandlers } from "../src/bot/handlers/balance";
 import { registerMontageHandlers } from "../src/bot/handlers/montage";
 import { registerVideosHandlers } from "../src/bot/handlers/videos";
 import { registerReferralHandlers } from "../src/bot/handlers/referral";
-import { closeDatabase, db, getBotLanguage } from "../src/lib/database";
+import { closeDatabase, db, getBotLanguage, getOrCreateReferralCode, referralState } from "../src/lib/database";
 import { translations } from "../src/bot/i18n";
 
 export async function verifyLanguage() {
@@ -24,7 +24,7 @@ export async function verifyLanguage() {
   async function send(text: string, userId = 7001, callback = false) {
     calls.length = 0;
     const from = { id: userId, is_bot: false, first_name: "Test" };
-    const message = { message_id: ++updateId, date: 1, chat: { id: userId, type: "private" as const, first_name: "Test" }, from, text, entities: text === "/start" ? [{ type: "bot_command" as const, offset: 0, length: 6 }] : undefined };
+    const message = { message_id: ++updateId, date: 1, chat: { id: userId, type: "private" as const, first_name: "Test" }, from, text, entities: text.startsWith("/start") ? [{ type: "bot_command" as const, offset: 0, length: 6 }] : undefined };
     const update: Update = callback
       ? { update_id: updateId, callback_query: { id: String(updateId), from, chat_instance: "offline", data: text, message } }
       : { update_id: updateId, message };
@@ -34,6 +34,13 @@ export async function verifyLanguage() {
   const hasButton = (text: string) => calls.some((call) => (JSON.stringify(call.reply_markup) ?? "").includes(text));
 
   assert.equal(getBotLanguage("7001"), "ru");
+  const firstReferrerCode = getOrCreateReferralCode("7003");
+  const otherReferrerCode = getOrCreateReferralCode("7005");
+  await send(`/start ${firstReferrerCode}`, 7004);
+  await send(`/start ${otherReferrerCode}`, 7004);
+  await send(`/start ${firstReferrerCode}`, 7003);
+  assert.equal(referralState("7003").invitedCount, 1, "First /start referrer remains assigned");
+  assert.equal(referralState("7005").invitedCount, 0, "Later /start links do not replace a referrer");
   await send(translations.ru.menu.support);
   assert.ok(hasButton("language:en"));
   await send("language:en", 7001, true);

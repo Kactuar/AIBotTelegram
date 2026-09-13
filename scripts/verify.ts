@@ -14,7 +14,7 @@ import { defaultMontageSettings } from "../src/montage/types";
 import { readSession, verifyTelegramInitData } from "../src/lib/auth";
 import { POST as authorizeTelegram } from "../app/api/auth/telegram/route";
 import { verifyLanguage } from "./verify-language";
-import { closeDatabase, completedProjectCount, completeMockPayment, createPaymentIntent, createProject, failProject, finishProject, getBotLanguage, getUser, hasActiveProject, paymentOperations, paymentState, profileIdentity, projectById, reserveGeneration, saveProfileIdentity, setBotLanguage, updateProject } from "../src/lib/database";
+import { claimReferralAttribution, closeDatabase, completedProjectCount, completeMockPayment, createPaymentIntent, createProject, failProject, finishProject, getBotLanguage, getOrCreateReferralCode, getUser, hasActiveProject, paymentOperations, paymentState, profileIdentity, projectById, referralState, reserveGeneration, saveProfileIdentity, setBotLanguage, updateProject } from "../src/lib/database";
 import { paymentPackages, priceFor } from "../src/lib/payments";
 import { createWatermark } from "../src/lib/watermark";
 import Database from "better-sqlite3";
@@ -57,6 +57,16 @@ process.env.PAYMENTS_MODE = "mock";
 assert.deepEqual(paymentPackages.map((item) => item.stars), [1118, 2618, 4868]);
 assert.equal(priceFor(paymentPackages[1], "foreign_card_2").label, "$43.00");
 assert.equal(getUser("42").balance, 100);
+const referralCode = getOrCreateReferralCode("500");
+assert.match(referralCode, /^[A-Za-z0-9_-]{8}$/);
+assert.equal(getOrCreateReferralCode("500"), referralCode, "Referral code is stable");
+assert.equal(claimReferralAttribution("501", referralCode), true, "First valid referral is recorded");
+assert.equal(claimReferralAttribution("501", referralCode), false, "Repeated referral is ignored");
+assert.equal(claimReferralAttribution("500", referralCode), false, "Self-referral is ignored");
+assert.equal(claimReferralAttribution("502", "not-a-code"), false, "Invalid referral is ignored");
+assert.equal(referralState("500").invitedCount, 1);
+closeDatabase();
+assert.equal(getOrCreateReferralCode("500"), referralCode, "Referral code survives reopening the database");
 const project = createProject("verify-project", "42", defaultMontageSettings);
 assert.ok(hasActiveProject("42"));
 updateProject(project.id, { status: "uploaded", inputPath: "/tmp/input.mp4" });
@@ -98,6 +108,24 @@ assert.equal(paymentOperations("42").length, 0);
 const cancelled = createPaymentIntent("44", "payment-cancelled", "start", "ru_card", "cancel-key");
 assert.ok(cancelled);
 assert.equal(completeMockPayment("44", "payment-cancelled", "cancelled")?.balance, 0);
+const referralPayment = createPaymentIntent("501", "payment-referral", "active", "ru_card", "referral-payment-key");
+assert.ok(referralPayment);
+assert.equal(completeMockPayment("501", referralPayment.id, "paid")?.operation.status, "paid");
+assert.equal(getUser("500").balance, 59, "Referrer receives 10% of paid tokens");
+assert.equal(completeMockPayment("501", referralPayment.id, "paid")?.operation.status, "paid", "Repeated payment completion is idempotent");
+assert.equal(getUser("500").balance, 59, "Reward is not credited twice");
+const referralCancelled = createPaymentIntent("501", "payment-referral-cancelled", "start", "ru_card", "referral-cancel-key");
+assert.ok(referralCancelled);
+completeMockPayment("501", referralCancelled.id, "cancelled");
+const referralFailed = createPaymentIntent("501", "payment-referral-failed", "start", "ru_card", "referral-failed-key");
+assert.ok(referralFailed);
+completeMockPayment("501", referralFailed.id, "failed");
+assert.equal(getUser("500").balance, 59, "Cancelled and failed payments do not reward referrers");
+const referralSummary = referralState("500");
+assert.equal(referralSummary.earnedTokens, 59);
+assert.equal(referralSummary.last7Days.length, 7);
+assert.equal(referralSummary.last7Days.at(-1)?.payments, 1);
+assert.deepEqual({ invited: referralState("502").invitedCount, earned: referralState("502").earnedTokens }, { invited: 0, earned: 0 }, "Referral statistics are isolated");
 async function verifyAuthRoute() {
   const signedData = (id: number) => {
     const params = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), user: JSON.stringify({ id, first_name: "Test", username: `user${id}` }) });
@@ -132,7 +160,7 @@ async function verifyAuthRoute() {
     assert.equal(rejected.status, 401);
     assert.equal(rejected.headers.get("set-cookie"), null);
   }
-  console.info("Keyboards, tariffs, mock payment idempotency, trial unlock, token reservation and Telegram auth route passed.");
+  console.info("Keyboards, tariffs, referral attribution/rewards, mock payment idempotency, trial unlock, token reservation and Telegram auth route passed.");
 }
 
 async function verifyWatermark() {

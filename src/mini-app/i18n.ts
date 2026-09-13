@@ -24,6 +24,11 @@ type Copy = {
     pay: (amount: string) => string; processing: string; disabled: string; mockConfirm: string; paymentAdded: (tokens: number) => string;
     cancelled: string; operationFailed: string; noOperations: string; pending: string; cancelledStatus: string; paidStatus: (tokens: number) => string;
   };
+  invite: {
+    title: string; subtitle: string; link: string; share: string; copy: string; copied: string; copyFailed: string;
+    invited: string; earned: string; sevenDays: string; loading: string; unavailable: string; empty: string;
+    invitedLegend: string; paymentsLegend: string; shareText: string;
+  };
   payment: { packageTitles: string[]; methods: string[] };
 };
 
@@ -43,6 +48,7 @@ const ru: Copy = {
     { question: "Сколько хранятся готовые ролики?", answer: "Результаты хранятся 72 часа, затем файлы удаляются." },
   ] },
   balance: { title: "БАЛАНС", balance: "Баланс", enoughFor: (count) => `Хватит на ${count} монтажей`, history: "История операций", bonusTitle: "Бесплатно, сверх пакета", bonusBody: "Пробный ролик без водяного знака придёт сразу после оплаты — токены за него не спишутся.", choosePackage: "ВЫБЕРИТЕ ПАКЕТ", popular: "ПОПУЛЯРНЫЙ", videos: (count) => `${count} роликов`, tokens: (count) => `${count} токенов`, perVideo: (amount) => `${amount} ₽ за ролик`, paymentMethod: "СПОСОБ ОПЛАТЫ", total: "ИТОГ", receive: "Получите", toAccount: "Токенов на счёт", toPay: "К оплате", agree: "Согласен с", offer: "офертой", privacy: "политикой конфиденциальности", pay: (amount) => `Оплатить ${amount}`, processing: "Обрабатываем…", disabled: "Оплата временно недоступна", mockConfirm: "Это тестовая оплата. Начислить токены?", paymentAdded: (tokens) => `Баланс пополнен на ${tokens} токенов.`, cancelled: "Оплата отменена.", operationFailed: "Не удалось выполнить оплату.", noOperations: "Операций пока нет.", pending: "В обработке", cancelledStatus: "Отменено", paidStatus: (tokens) => `+${tokens} токенов` },
+  invite: { title: "Приглашайте друзей", subtitle: "За каждую оплату друга вам возвращается 10% от купленных им токенов — прямо на баланс.", link: "ВАША ССЫЛКА", share: "Поделиться", copy: "Скопировать", copied: "Ссылка скопирована", copyFailed: "Не удалось скопировать ссылку.", invited: "приглашено", earned: "токенов заработано", sevenDays: "ЗА 7 ДНЕЙ", loading: "Загружаем статистику…", unavailable: "Откройте приложение через Telegram, чтобы получить ссылку.", empty: "За этот период ни приглашений, ни оплат — здесь появится график.", invitedLegend: "Приглашения", paymentsLegend: "Оплаты", shareText: "Попробуй Brandly — автоматический монтаж видео в Telegram." },
   payment: { packageTitles: ["Старт", "Для активных", "Контент-завод"], methods: ["Карта РФ / СБП 💳", "Зарубежная карта #1 🌍", "Зарубежная карта #2 🌍", "Telegram Stars ⭐"] },
 };
 
@@ -62,6 +68,7 @@ const en: Copy = {
     { question: "How long are finished videos stored?", answer: "Results are stored for 72 hours, then their files are deleted." },
   ] },
   balance: { title: "BALANCE", balance: "Balance", enoughFor: (count) => `Enough for ${count} edits`, history: "Transaction history", bonusTitle: "Free, in addition to your package", bonusBody: "The trial video without a watermark arrives after payment — no tokens are charged for it.", choosePackage: "CHOOSE A PACKAGE", popular: "POPULAR", videos: (count) => `${count} videos`, tokens: (count) => `${count} tokens`, perVideo: (amount) => `${amount} ₽ per video`, paymentMethod: "PAYMENT METHOD", total: "TOTAL", receive: "You receive", toAccount: "Tokens to your account", toPay: "To pay", agree: "I agree to the", offer: "offer", privacy: "privacy policy", pay: (amount) => `Pay ${amount}`, processing: "Processing…", disabled: "Payments are unavailable", mockConfirm: "This is a test payment. Add tokens?", paymentAdded: (tokens) => `${tokens} tokens added to your balance.`, cancelled: "Payment cancelled.", operationFailed: "Could not complete the payment.", noOperations: "No transactions yet.", pending: "Processing", cancelledStatus: "Cancelled", paidStatus: (tokens) => `+${tokens} tokens` },
+  invite: { title: "Invite friends", subtitle: "For each payment by an invited friend, you receive 10% of the tokens they purchase directly to your balance.", link: "YOUR LINK", share: "Share", copy: "Copy", copied: "Link copied", copyFailed: "Could not copy the link.", invited: "invited", earned: "tokens earned", sevenDays: "LAST 7 DAYS", loading: "Loading statistics…", unavailable: "Open the app through Telegram to get your link.", empty: "No invitations or payments in this period — the chart will appear here.", invitedLegend: "Invitations", paymentsLegend: "Payments", shareText: "Try Brandly — automatic video editing in Telegram." },
   payment: { packageTitles: ["Starter", "For active users", "Content factory"], methods: ["Russian card / SBP 💳", "Foreign card #1 🌍", "Foreign card #2 🌍", "Telegram Stars ⭐"] },
 };
 
