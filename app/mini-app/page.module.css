@@ -157,3 +157,34 @@
 .switchOn i { transform:translateX(18px); }
 .generate { min-height:62px; font-size:16px; }
 .balanceSummary { font-size:12px; }
+
+/* Match the compact balance layout of the reference Telegram client. */
+.balanceCard { padding:22px 20px 20px; margin-bottom:22px; border-radius:20px; }
+.balanceCard>span,.balanceLabel { margin-bottom:8px; font-size:12px; line-height:16px; }
+.balanceCard h1 { font-size:32px; line-height:36px; }
+.balanceCard h1 small { font-size:14px; }
+.balanceCard p { margin:6px 0 16px; font-size:14px; line-height:18px; }
+.balanceCard button { height:48px; min-height:0; border-radius:24px; font-size:14px; }
+.bonusCard { padding:14px 18px; margin-bottom:22px; border-radius:20px; }
+.bonusCard b { gap:10px; font-size:14px; line-height:18px; }
+.bonusCard b:first-letter { font-size:24px; }
+.bonusCard p { margin:4px 0 0 34px; font-size:13px; line-height:18px; }
+.balanceLabel { margin-top:20px; }
+.packageList,.methodList { gap:11px; }
+.packageCard { min-height:98px; height:98px; padding:14px 18px; border-radius:20px; }
+.packageCard[aria-pressed="true"] { height:116px; }
+.packageCard i { top:12px; left:18px; padding:2px 6px; font-size:9px; }
+.packageCard i+div { margin-top:16px; }
+.packageCard div,.packageCard aside { gap:3px; }
+.packageCard div>b { font-size:21px; line-height:24px; }
+.packageCard div strong { font-size:14px; line-height:18px; }
+.packageCard span,.methodList span { font-size:12px; line-height:16px; }
+.packageCard aside>b { font-size:17px; line-height:20px; }
+.methodList button { height:52px; min-height:0; padding:12px 18px; border-radius:18px; font-size:14px; }
+.methodList button b { font-size:14px; }
+.totalCard { padding:8px 18px; border-radius:18px; }
+.totalCard p { padding:14px 0; font-size:14px; }
+.totalCard b { font-size:17px; }
+.terms { gap:9px; margin:15px 0; font-size:12px; line-height:18px; }
+.terms input { width:22px; height:22px; border-radius:6px; }
+.payButton { height:50px; min-height:0; border-radius:25px; font-size:14px; }
