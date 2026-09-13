@@ -7,7 +7,9 @@ import { registerBalanceHandlers } from "../src/bot/handlers/balance";
 import { registerMontageHandlers } from "../src/bot/handlers/montage";
 import { registerVideosHandlers } from "../src/bot/handlers/videos";
 import { registerReferralHandlers } from "../src/bot/handlers/referral";
-import { closeDatabase, db, getBotLanguage, getOrCreateReferralCode, referralState } from "../src/lib/database";
+import { closeDatabase, db } from "../src/server/database";
+import { getOrCreateReferralCode, referralState } from "../src/server/referrals";
+import { getBotLanguage } from "../src/server/users";
 import { translations } from "../src/bot/i18n";
 
 export async function verifyLanguage() {

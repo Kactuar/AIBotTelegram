@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
-import { appConfig } from "@/src/lib/config";
+import { appConfig } from "@/src/server/config";
 
 const SESSION_COOKIE = "aibot_session";
 const MAX_INIT_DATA_AGE_SECONDS = 60 * 60;
@@ -23,9 +23,7 @@ export function verifyTelegramInitData(initData: string, botToken = appConfig().
   return { id: String(parsed.id), firstName: parsed.first_name, username: parsed.username };
 }
 
-function sign(value: string) {
-  return crypto.createHmac("sha256", appConfig().sessionSecret).update(value).digest("base64url");
-}
+function sign(value: string) { return crypto.createHmac("sha256", appConfig().sessionSecret).update(value).digest("base64url"); }
 
 export function sessionValue(telegramId: string) {
   const expiresAt = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
@@ -51,11 +49,8 @@ export async function requireUserId() {
 }
 
 export const sessionCookie = (value: string) => ({ name: SESSION_COOKIE, value, httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: 24 * 60 * 60 });
-
 export function isAllowedUser(telegramId: string) { return appConfig().allowedUserIds.has(telegramId); }
-
 export function downloadSignature(projectId: string, expires: string) { return sign(`${projectId}.${expires}`); }
-
 export function validDownloadSignature(projectId: string, expires: string, signature: string | null) {
   if (!signature || !/^\d+$/.test(expires) || Number(expires) < Date.now() / 1000) return false;
   const expected = downloadSignature(projectId, expires);

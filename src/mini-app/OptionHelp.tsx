@@ -1,6 +1,6 @@
 "use client";
 
-import type { MontageSettings } from "@/src/montage/types";
+import type { MontageSettings } from "@/src/domain/montage";
 import InfoDialog from "./InfoDialog";
 import type { MiniAppLanguage } from "./i18n";
 import styles from "@/app/mini-app/page.module.css";
@@ -65,7 +65,7 @@ export function getToggles(language: MiniAppLanguage): MontageOption[] {
 
 export default function OptionHelp({ option, onClose, language }: { option: MontageOption; onClose(): void; language: MiniAppLanguage }) {
   return <InfoDialog labelledBy="option-help-title" onClose={onClose} language={language}>
-    {option.image && <img {...option.image} className={`${styles.helpImage} ${option.key === "mediaCards" ? styles.helpPortrait : ""}`} />}
+    {option.image && <img {...option.image} alt={option.image.alt || ""} className={`${styles.helpImage} ${option.key === "mediaCards" ? styles.helpPortrait : ""}`} />}
     <h2 id="option-help-title">{option.label}</h2>
     {option.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
   </InfoDialog>;

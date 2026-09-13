@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { getOrCreateReferralCode, referralState } from "@/src/lib/database";
+import { requireUserId } from "@/src/server/auth";
+import { getOrCreateReferralCode, referralState } from "@/src/server/referrals";
 import { bot } from "@/src/bot/bot";
 
 export const runtime = "nodejs";

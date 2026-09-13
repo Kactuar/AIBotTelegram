@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { projectById, updateProject } from "@/src/lib/database";
-import { canAcceptUpload, extensionFor, inputPath, writeUpload } from "@/src/lib/storage";
+import { requireUserId } from "@/src/server/auth";
+import { projectById, updateProject } from "@/src/server/projects";
+import { canAcceptUpload, extensionFor, inputPath, writeUpload } from "@/src/server/storage";
 
 export const runtime = "nodejs";
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {

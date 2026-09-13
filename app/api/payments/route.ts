@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { paymentOperations, paymentState } from "@/src/lib/database";
+import { requireUserId } from "@/src/server/auth";
+import { paymentOperations, paymentState } from "@/src/server/payments";
 
 export const runtime = "nodejs";
 

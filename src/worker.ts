@@ -1,14 +1,15 @@
 import dotenv from "dotenv";
 dotenv.config({ path: process.env.AIBOT_ENV_PATH || ".env.local" });
-import fs from "node:fs/promises";
 import { Api } from "grammy";
-import { appConfig } from "@/src/lib/config";
-import { claimQueuedProject, db, expiredResults, failProject, finishProject, getBotLanguage, projectById, updateProject } from "@/src/lib/database";
+import { appConfig } from "@/src/server/config";
+import { db } from "@/src/server/database";
+import { claimQueuedProject, expiredResults, failProject, finishProject, projectById, updateProject } from "@/src/server/projects";
+import { getBotLanguage } from "@/src/server/users";
 import { translations } from "@/src/bot/i18n";
-import { downloadSignature } from "@/src/lib/auth";
-import { downloadRunwayOutput, runwayTask, startRunwayEdit } from "@/src/lib/runway";
-import { removeFile, resultPath, watermarkedResultPath } from "@/src/lib/storage";
-import { createWatermark } from "@/src/lib/watermark";
+import { downloadSignature } from "@/src/server/auth";
+import { downloadRunwayOutput, runwayTask, startRunwayEdit } from "@/src/server/runway";
+import { removeFile, resultPath, watermarkedResultPath } from "@/src/server/storage";
+import { createWatermark } from "@/src/server/watermark";
 
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 let lastCleanup = 0;

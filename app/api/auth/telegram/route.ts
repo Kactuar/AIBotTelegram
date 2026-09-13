@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { sessionCookie, sessionValue, verifyTelegramInitData, isAllowedUser } from "@/src/lib/auth";
-import { getBotLanguage, getOrCreateUser, paymentState, saveProfileIdentity } from "@/src/lib/database";
+import { sessionCookie, sessionValue, verifyTelegramInitData, isAllowedUser } from "@/src/server/auth";
+import { paymentState } from "@/src/server/payments";
+import { getBotLanguage, getOrCreateUser, saveProfileIdentity } from "@/src/server/users";
 
 export const runtime = "nodejs";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   paymentMethods,
   paymentPackages,
@@ -8,16 +8,12 @@ import {
   type PaymentMethod,
   type PaymentOperation,
   type PaymentPackage,
-} from "@/src/lib/payments";
+} from "@/src/domain/payments";
+import type { PaymentStateResponse } from "@/src/domain/api";
 import { copy, type MiniAppLanguage } from "./i18n";
-import styles from "@/app/mini-app/page.module.css";
+import styles from "./balance.module.css";
 
-type State = {
-  balance: number;
-  trialAvailable: boolean;
-  paymentEnabled: boolean;
-  operations: PaymentOperation[];
-};
+type State = PaymentStateResponse;
 
 type BalanceScreenProps = {
   balance: number;
@@ -54,7 +50,7 @@ export default function BalanceScreen({
   const item = paymentPackages.find((value) => value.id === selectedPackage) || paymentPackages[1];
   const t = copy[language].balance;
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     const response = await fetch("/api/payments");
     if (!response.ok) return;
 
@@ -62,11 +58,11 @@ export default function BalanceScreen({
     setOperations(data.operations);
     setPaymentEnabled(data.paymentEnabled);
     onState(data);
-  };
+  }, [onState]);
 
   useEffect(() => {
     if (authorized) void refresh();
-  }, [authorized]);
+  }, [authorized, refresh]);
 
   const confirm = () => new Promise<boolean>((resolve) => {
     const app = window.Telegram?.WebApp;
@@ -242,7 +238,6 @@ function PaymentForm({
       {paymentPackages.map((entry, index) => <PackageCard
         key={entry.id}
         entry={entry}
-        language={language}
         selected={entry.id === item.id}
         title={copy[language].payment.packageTitles[index]}
         t={t}
@@ -286,9 +281,8 @@ function PaymentForm({
   </section>;
 }
 
-function PackageCard({ entry, language, selected, title, t, onSelect }: {
+function PackageCard({ entry, selected, title, t, onSelect }: {
   entry: PaymentPackage;
-  language: MiniAppLanguage;
   selected: boolean;
   title: string;
   t: BalanceCopy;

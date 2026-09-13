@@ -1,7 +1,7 @@
 import type { Bot, Context } from "grammy";
 import { REFERRAL } from "@/src/bot/keyboards/main";
 import { languageOf, translations } from "@/src/bot/i18n";
-import { getOrCreateReferralCode, referralState } from "@/src/lib/database";
+import { getOrCreateReferralCode, referralState } from "@/src/server/referrals";
 
 async function referralText(ctx: Context) {
   const t = translations[languageOf(ctx)];

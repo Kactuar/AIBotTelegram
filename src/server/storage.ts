@@ -3,7 +3,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { appConfig } from "@/src/lib/config";
+import { appConfig } from "@/src/server/config";
 
 const MAX_BYTES = 100 * 1024 * 1024;
 const MIN_FREE_BYTES = 10 * 1024 * 1024 * 1024;

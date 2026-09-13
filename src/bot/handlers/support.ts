@@ -2,8 +2,8 @@ import type { Bot, Context } from "grammy";
 import { SUPPORT, mainKeyboard } from "@/src/bot/keyboards/main";
 import { supportKeyboard } from "@/src/bot/keyboards/referral";
 import { languageOf, translations, type Language } from "@/src/bot/i18n";
-import { setBotLanguage } from "@/src/lib/database";
-import { appConfig } from "@/src/lib/config";
+import { setBotLanguage } from "@/src/server/users";
+import { appConfig } from "@/src/server/config";
 
 const supportText = (language: Language) => translations[language].support + (appConfig().supportUrl ? "" : `\n\n${translations[language].noOperator}`);
 

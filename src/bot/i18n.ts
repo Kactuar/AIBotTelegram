@@ -1,5 +1,5 @@
 import type { Context } from "grammy";
-import { getBotLanguage } from "@/src/lib/database";
+import { getBotLanguage } from "@/src/server/users";
 
 export type Language = "ru" | "en";
 export const languageOf = (ctx: Pick<Context, "from">): Language => ctx.from ? getBotLanguage(String(ctx.from.id)) : "ru";

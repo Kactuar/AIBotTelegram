@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { copy, type MiniAppLanguage } from "./i18n";
-import { Icon } from "./MiniApp";
+import { Icon } from "./AppShell";
 import styles from "@/app/mini-app/page.module.css";
 
 type Profile = { firstName?: string; username?: string; language: MiniAppLanguage; completedVideos: number };
@@ -27,7 +27,7 @@ export default function ProfileScreen({ authorized, header, nav, language, onLan
       if (data.profile.language !== language) onLanguage(data.profile.language);
     });
     return () => { active = false; };
-  }, [authorized]);
+  }, [authorized, language, onLanguage]);
 
   const setLocale = async (next: MiniAppLanguage) => {
     if (next === language) return;

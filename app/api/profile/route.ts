@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { appConfig } from "@/src/lib/config";
-import { completedProjectCount, getBotLanguage, profileIdentity, setBotLanguage } from "@/src/lib/database";
+import { requireUserId } from "@/src/server/auth";
+import { appConfig } from "@/src/server/config";
+import { completedProjectCount } from "@/src/server/projects";
+import { getBotLanguage, profileIdentity, setBotLanguage } from "@/src/server/users";
 
 export const runtime = "nodejs";
 

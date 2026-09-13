@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { projectById, reserveGeneration } from "@/src/lib/database";
-import { composePrompt } from "@/src/lib/prompt";
+import { requireUserId } from "@/src/server/auth";
+import { projectById, reserveGeneration } from "@/src/server/projects";
+import { composePrompt } from "@/src/domain/montage";
 
 export const runtime = "nodejs";
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {

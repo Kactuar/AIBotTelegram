@@ -9,8 +9,6 @@ const glyphs: Record<string, string[]> = {
   B: ["1110", "1001", "1001", "1110", "1001", "1001", "1110"], R: ["1110", "1001", "1001", "1110", "1010", "1001", "1001"], A: ["0110", "1001", "1001", "1111", "1001", "1001", "1001"], N: ["1001", "1101", "1101", "1011", "1011", "1001", "1001"], D: ["1110", "1001", "1001", "1001", "1001", "1001", "1110"], L: ["1000", "1000", "1000", "1000", "1000", "1000", "1111"], Y: ["1001", "1001", "0110", "0010", "0010", "0010", "0010"],
 };
 
-export function watermarkResultPath(result: string) { return path.join(path.dirname(result), "trial-watermarked.mp4"); }
-
 function writeWatermarkLayer(filename: string) {
   const width = 360; const height = 640; const pixels = Buffer.alloc(width * height * 3);
   const draw = (text: string, x: number, y: number) => text.split("").forEach((letter, letterIndex) => glyphs[letter].forEach((row, rowIndex) => [...row].forEach((pixel, pixelIndex) => {

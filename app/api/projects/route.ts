@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { createProject, getUser, hasActiveProject } from "@/src/lib/database";
+import { requireUserId } from "@/src/server/auth";
+import { createProject, hasActiveProject } from "@/src/server/projects";
+import { getUser } from "@/src/server/users";
 
 export const runtime = "nodejs";
 export async function POST() {

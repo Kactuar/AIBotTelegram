@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { NextResponse } from "next/server";
-import { projectById } from "@/src/lib/database";
-import { validDownloadSignature } from "@/src/lib/auth";
+import { projectById } from "@/src/server/projects";
+import { validDownloadSignature } from "@/src/server/auth";
 
 export const runtime = "nodejs";
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {

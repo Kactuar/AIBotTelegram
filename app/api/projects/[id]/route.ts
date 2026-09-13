@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { projectById } from "@/src/lib/database";
+import { requireUserId } from "@/src/server/auth";
+import { projectById } from "@/src/server/projects";
 
 export const runtime = "nodejs";
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {

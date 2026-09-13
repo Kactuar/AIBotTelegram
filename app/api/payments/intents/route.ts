@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { appConfig } from "@/src/lib/config";
-import { createPaymentIntent } from "@/src/lib/database";
-import { isPaymentMethod, paymentPackage } from "@/src/lib/payments";
+import { requireUserId } from "@/src/server/auth";
+import { appConfig } from "@/src/server/config";
+import { createPaymentIntent } from "@/src/server/payments";
+import { isPaymentMethod, paymentPackage } from "@/src/domain/payments";
 
 export const runtime = "nodejs";
 

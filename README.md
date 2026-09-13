@@ -140,3 +140,9 @@ npm run telegram:setup
 ### Откат
 
 Запустите `npm run telegram:setup`, указав прежние URL на Vercel, остановите `aibot-web` и `aibot-worker`, после чего удалите только Caddy-конфигурацию, относящуюся к этому IP-адресу.
+
+## Структура и проверки
+
+`src/domain` содержит чистые модели и правила, `src/server` — авторизацию, SQLite и внешние интеграции, а `src/mini-app` — клиентские экраны и Telegram-адаптер. Бот и worker остаются отдельными точками входа.
+
+Для локального цикла используйте `npm run lint`, `npm run typecheck` и `npm test`. Полная проверка для CI и деплоя — `npm run verify`; она дополнительно запускает FFmpeg watermark-тест. В ограниченной Windows-среде его `spawn EPERM` нужно подтверждать Linux CI.

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/src/lib/auth";
-import { getUser, saveSettings } from "@/src/lib/database";
-import { defaultMontageSettings, type MontageSettings } from "@/src/montage/types";
+import { requireUserId } from "@/src/server/auth";
+import { getUser, saveSettings } from "@/src/server/users";
+import { defaultMontageSettings, type MontageSettings } from "@/src/domain/montage";
 
 export const runtime = "nodejs";
 const valid = (value: unknown): value is MontageSettings => {

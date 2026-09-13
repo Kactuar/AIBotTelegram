@@ -4,7 +4,7 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import RunwayML from "@runwayml/sdk";
-import { appConfig } from "@/src/lib/config";
+import { appConfig } from "@/src/server/config";
 
 function client() {
   const secret = appConfig().runwaySecret;
@@ -18,9 +18,7 @@ export async function startRunwayEdit(input: string, prompt: string) {
   const task = await runway.videoToVideo.create({ model: "aleph2", videoUri: uploaded.uri, promptText: prompt, outputFormat: "mp4" });
   return task.id;
 }
-
 export async function runwayTask(taskId: string) { return client().tasks.retrieve(taskId); }
-
 export async function downloadRunwayOutput(url: string, target: string) {
   const response = await fetch(url);
   if (!response.ok || !response.body) throw new Error("runway_output_download_failed");
