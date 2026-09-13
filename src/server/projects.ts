@@ -25,6 +25,9 @@ export function projectById(id: string) {
   const row = db().prepare("SELECT * FROM projects WHERE id = ?").get(id) as Record<string, unknown> | undefined;
   return row ? toProject(row) : undefined;
 }
+export function availableProjects(userId: string) {
+  return db().prepare("SELECT * FROM projects WHERE user_id = ? AND status = 'completed' AND result_expires_at > ? ORDER BY created_at DESC").all(userId, now()).map((row) => toProject(row as Record<string, unknown>));
+}
 export function createProject(id: string, userId: string, settings: MontageSettings) {
   getUser(userId);
   const time = now();

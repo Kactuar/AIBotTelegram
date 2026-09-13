@@ -8,7 +8,8 @@ import BalanceScreen from "./BalanceScreen";
 import InviteScreen from "./InviteScreen";
 import MontageScreen from "./MontageScreen";
 import ProfileScreen from "./ProfileScreen";
-import { copy, type MiniAppLanguage } from "./i18n";
+import VideosScreen from "./VideosScreen";
+import { type MiniAppLanguage } from "./i18n";
 import { telegramWebApp } from "./telegram";
 import styles from "@/app/mini-app/page.module.css";
 
@@ -24,8 +25,6 @@ export default function MiniApp() {
   const [language, setLanguage] = useState<MiniAppLanguage>("ru");
   const [balanceHistory, setBalanceHistory] = useState(false);
   const [profileSupport, setProfileSupport] = useState(false);
-  const t = copy[language];
-
   const closeOverlay = useCallback(() => { setBalanceHistory(false); setProfileSupport(false); }, []);
   const applyPaymentState = useCallback((state: { balance: number; trialAvailable: boolean }) => { setBalance(state.balance); setTrialAvailable(state.trialAvailable); }, []);
   useEffect(() => {
@@ -69,6 +68,6 @@ export default function MiniApp() {
   if (tab === "balance") return <section className={appClass}><BalanceScreen language={language} balance={balance} authorized={authorized} authPending={authPending} header={header} historyOpen={balanceHistory} setHistoryOpen={setBalanceHistory} onState={applyPaymentState} nav={nav("balance")} /></section>;
   if (tab === "invite") return <section className={appClass}><InviteScreen language={language} authorized={authorized} authPending={authPending} header={header} onBalance={setBalance} nav={nav("invite")} /></section>;
   if (tab === "profile") return <section className={appClass}><ProfileScreen authorized={authorized} header={header} language={language} onLanguage={setLanguage} onBalance={() => setTab("balance")} supportOpen={profileSupport} setSupportOpen={setProfileSupport} nav={nav("profile")} /></section>;
-  if (tab === "videos") return <section className={styles.placeholder}><h1>{t.nav.videos}</h1><p>{t.common.comingSoon}</p><button onClick={() => setTab("montage")}>{t.nav.montage}</button>{nav("videos")}</section>;
+  if (tab === "videos") return <VideosScreen authorized={authorized} authPending={authPending} header={header} language={language} nav={nav("videos")} />;
   return <section className={appClass}><MontageScreen authorized={authorized} authPending={authPending} authError={authError} balance={balance} initialSettings={settings} language={language} trialAvailable={trialAvailable} header={header} nav={nav("montage")} onBalanceChange={(change) => setBalance(change)} onSelectBalance={() => setTab("balance")} onTrialAvailableChange={setTrialAvailable} /></section>;
 }
