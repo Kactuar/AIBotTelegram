@@ -25,6 +25,10 @@ export function db() {
       runway_task_id TEXT, status TEXT NOT NULL, error_code TEXT, reserved_tokens INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL, updated_at TEXT NOT NULL, result_expires_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS openrouter_jobs (
+      project_id TEXT PRIMARY KEY, segment_index INTEGER NOT NULL CHECK (segment_index IN (1, 2)),
+      attempt INTEGER NOT NULL DEFAULT 1, job_id TEXT, next_action_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
     CREATE INDEX IF NOT EXISTS projects_user_status ON projects(user_id, status);
     CREATE TABLE IF NOT EXISTS payment_operations (
       id TEXT PRIMARY KEY, user_id TEXT NOT NULL, package_id TEXT NOT NULL, method TEXT NOT NULL,

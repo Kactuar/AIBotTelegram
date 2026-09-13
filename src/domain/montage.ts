@@ -45,6 +45,11 @@ export interface ProjectRecord {
   resultExpiresAt: string | null;
 }
 
+export interface MontagePromptContext {
+  segmentIndex?: 1 | 2;
+  segmentCount?: 1 | 2;
+}
+
 const palette: Record<MontageSettings["color"], string> = {
   amber: "Warm amber and golden-yellow accents.",
   azure: "Clean azure-blue accents.",
@@ -52,18 +57,20 @@ const palette: Record<MontageSettings["color"], string> = {
   crimson: "Deep crimson-red accents.",
 };
 
-export function composePrompt(settings: MontageSettings): string {
+export function composePrompt(settings: MontageSettings, context: MontagePromptContext = {}): string {
   const blocks = [
-    "Preserve the speaker, framing, spoken content and natural motion of the source video.",
+    "Edit this vertical social video as a single continuous production. Preserve the speaker, framing, spoken meaning, original language, lip sync, natural motion and existing audio.",
+    "Do not add brands, logos, watermarks, unsupported facts or unrelated objects. Keep the source aspect ratio and maintain visual continuity across cuts.",
     "Apply a premium Glass Reels visual style: clean modern typography, soft contrast and restrained editorial composition.",
     palette[settings.color],
   ];
-  if (settings.trimVideo) blocks.push("Trim pauses and weak moments into a concise engaging vertical reel.");
-  if (settings.generateHook) blocks.push("Add a short compelling visual hook at the beginning, without inventing facts.");
-  if (settings.soundEffects) blocks.push("Add subtle, unobtrusive sound design where it improves transitions.");
-  if (settings.mediaCards) blocks.push("Add minimal supporting media cards only when they help explain the spoken content.");
-  if (settings.emojiSubtitles) blocks.push("Use a few tasteful emoji accents in on-screen captions.");
-  if (settings.badges) blocks.push("Use compact glass badges and cards for important points.");
-  if (settings.cameraMotion) blocks.push("Add gentle virtual camera motion while keeping the speaker natural.");
+  if (settings.trimVideo) blocks.push("Remove pauses, repetitions and speech filler where possible while preserving meaning and natural pacing; this is best effort and the output duration remains the source duration.");
+  if (settings.generateHook && context.segmentIndex !== 2) blocks.push("Add a short compelling visual hook or text hook during the first two seconds, derived only from the source content and without inventing facts or changing the speaker's meaning.");
+  if (settings.soundEffects) blocks.push("Add short, subtle sound effects at meaningful transitions without covering speech or adding background music.");
+  if (settings.mediaCards) blocks.push("Add minimal illustrative media cards only where they explain the spoken content; do not invent facts, brands or numbers.");
+  if (settings.emojiSubtitles) blocks.push("Add synchronized subtitles in the source language with sparse, semantically appropriate emoji, without changing the spoken text or meaning.");
+  if (settings.badges) blocks.push("Highlight already-spoken key phrases and numbers with compact glass badges and cards; do not create new information.");
+  if (settings.cameraMotion) blocks.push("Add gentle digital push-ins and pans without warping the face, aggressive cropping or abrupt motion.");
+  if (context.segmentIndex === 2 && context.segmentCount === 2) blocks.push("This is the continuation of the previous segment. Do not create a new hook or introduction, restart the narrative, or change the established Glass style and color.");
   return blocks.join("\n\n");
 }

@@ -13,12 +13,12 @@
     "telegram:setup": "tsx scripts/setup-telegram.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --exclude tests/watermark.test.ts",
+    "test": "vitest run --exclude tests/watermark.test.ts --exclude tests/video-processing.test.ts",
     "test:watermark": "vitest run tests/watermark.test.ts",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run test:watermark"
+    "test:video": "vitest run tests/video-processing.test.ts",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run test:watermark && npm run test:video"
   },
   "dependencies": {
-    "@runwayml/sdk": "^4.20.0",
     "@types/ffmpeg-static": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "dotenv": "^16.6.1",

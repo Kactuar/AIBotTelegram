@@ -17,6 +17,20 @@ describe("pure domain and bot helpers", () => {
     expect(priceFor(paymentPackages[1], "foreign_card_2").label).toBe("$43.00");
   });
 
+  it("adds enabled editing instructions and only hooks the first segment", () => {
+    const settings = { ...defaultMontageSettings, generateHook: true, soundEffects: true, mediaCards: true, emojiSubtitles: true, badges: true, cameraMotion: true };
+    const first = composePrompt(settings, { segmentIndex: 1, segmentCount: 2 });
+    const second = composePrompt(settings, { segmentIndex: 2, segmentCount: 2 });
+    expect(first).toContain("compelling visual hook");
+    expect(first).toContain("sound effects");
+    expect(first).toContain("media cards");
+    expect(first).toContain("emoji");
+    expect(first).toContain("glass badges");
+    expect(first).toContain("digital push-ins");
+    expect(second).not.toContain("compelling visual hook");
+    expect(second).toContain("continuation of the previous segment");
+  });
+
   it("keeps menus and tariff keyboards populated", () => {
     expect(mockVideos.length).toBeGreaterThan(0);
     expect(videoListKeyboard(mockVideos).inline_keyboard).toHaveLength(mockVideos.length);

@@ -2,6 +2,15 @@ import { type MontageSettings, type ProjectRecord, type ProjectStatus } from "@/
 import { db, now } from "@/src/server/database";
 import { getUser } from "@/src/server/users";
 
+export interface OpenRouterJobRecord {
+  projectId: string;
+  segmentIndex: 1 | 2;
+  attempt: number;
+  jobId: string | null;
+  nextActionAt: string;
+  updatedAt: string;
+}
+
 function toProject(row: Record<string, unknown>): ProjectRecord {
   return {
     id: String(row.id), userId: String(row.user_id), settings: JSON.parse(String(row.settings_json)), prompt: row.prompt as string | null,
@@ -79,3 +88,20 @@ export function expiredResults() { return db().prepare("SELECT * FROM projects W
 export function completedProjectCount(telegramId: string) {
   return Number((db().prepare("SELECT COUNT(*) AS count FROM projects WHERE user_id = ? AND status = 'completed'").get(telegramId) as { count: number }).count);
 }
+
+export function openRouterJob(projectId: string): OpenRouterJobRecord | undefined {
+  const row = db().prepare("SELECT * FROM openrouter_jobs WHERE project_id = ?").get(projectId) as Record<string, unknown> | undefined;
+  if (!row) return undefined;
+  return { projectId: String(row.project_id), segmentIndex: Number(row.segment_index) as 1 | 2, attempt: Number(row.attempt), jobId: row.job_id as string | null, nextActionAt: String(row.next_action_at), updatedAt: String(row.updated_at) };
+}
+
+export function saveOpenRouterJob(projectId: string, fields: { segmentIndex: 1 | 2; attempt: number; jobId: string | null; nextActionAt: string }) {
+  const timestamp = now();
+  db().prepare(`INSERT INTO openrouter_jobs (project_id, segment_index, attempt, job_id, next_action_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(project_id) DO UPDATE SET segment_index = excluded.segment_index, attempt = excluded.attempt,
+      job_id = excluded.job_id, next_action_at = excluded.next_action_at, updated_at = excluded.updated_at`).run(projectId, fields.segmentIndex, fields.attempt, fields.jobId, fields.nextActionAt, timestamp);
+  return openRouterJob(projectId)!;
+}
+
+export function clearOpenRouterJob(projectId: string) { db().prepare("DELETE FROM openrouter_jobs WHERE project_id = ?").run(projectId); }

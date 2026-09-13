@@ -3,7 +3,7 @@ import { defaultMontageSettings } from "@/src/domain/montage";
 import { closeDatabase } from "@/src/server/database";
 import { completeMockPayment, createPaymentIntent, paymentOperations, paymentState } from "@/src/server/payments";
 import { claimReferralAttribution, getOrCreateReferralCode, referralState } from "@/src/server/referrals";
-import { createProject, failProject, finishProject, hasActiveProject, reserveGeneration, updateProject, completedProjectCount } from "@/src/server/projects";
+import { clearOpenRouterJob, createProject, failProject, finishProject, hasActiveProject, openRouterJob, reserveGeneration, saveOpenRouterJob, updateProject, completedProjectCount } from "@/src/server/projects";
 import { getBotLanguage, getUser, profileIdentity, saveProfileIdentity, setBotLanguage } from "@/src/server/users";
 import { createLegacyDatabase, createTestDatabase } from "./helpers";
 
@@ -15,6 +15,10 @@ describe("SQLite migrations and transactional workflows", () => {
     const fixture = createTestDatabase(); remove = fixture.remove;
     createLegacyDatabase(fixture.filename);
     expect(getUser("42").balance).toBe(100);
+    saveOpenRouterJob("legacy-project", { segmentIndex: 1, attempt: 1, jobId: "job-1", nextActionAt: new Date().toISOString() });
+    expect(openRouterJob("legacy-project")).toMatchObject({ segmentIndex: 1, jobId: "job-1" });
+    clearOpenRouterJob("legacy-project");
+    expect(openRouterJob("legacy-project")).toBeUndefined();
     saveProfileIdentity("42", "Profile", "profile_user");
     expect(profileIdentity("42")).toEqual({ firstName: "Profile", username: "profile_user" });
   });

@@ -56,3 +56,9 @@ export function validDownloadSignature(projectId: string, expires: string, signa
   const expected = downloadSignature(projectId, expires);
   return signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
+export function sourceSignature(projectId: string, segment: string, expires: string) { return sign(`source.${projectId}.${segment}.${expires}`); }
+export function validSourceSignature(projectId: string, segment: string, expires: string, signature: string | null) {
+  if (!/^[12]$/.test(segment) || !/^\d+$/.test(expires) || Number(expires) < Date.now() / 1000) return false;
+  const expected = sourceSignature(projectId, segment, expires);
+  return Boolean(signature) && signature!.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature!), Buffer.from(expected));
+}
