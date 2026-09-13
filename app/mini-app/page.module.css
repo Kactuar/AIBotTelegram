@@ -165,18 +165,22 @@
 .balanceCard h1 small { font-size:14px; }
 .balanceCard p { margin:6px 0 16px; font-size:14px; line-height:18px; }
 .balanceCard button { height:48px; min-height:0; border-radius:24px; font-size:14px; }
-.bonusCard { padding:14px 18px; margin-bottom:22px; border-radius:20px; }
-.bonusCard b { gap:10px; font-size:14px; line-height:18px; }
-.bonusCard b:first-letter { font-size:24px; }
-.bonusCard p { margin:4px 0 0 34px; font-size:13px; line-height:18px; }
+.bonusCard { padding:14px 18px 14px 35px; margin-bottom:22px; border-radius:20px; }
+.bonusCard b { gap:12px; font-size:14px; font-weight:800; line-height:18px; }
+.bonusCard b:first-letter { font-size:inherit; }
+.bonusIcon { flex:0 0 24px; font-size:28px; font-style:normal; line-height:1; }
+.bonusCard p { margin:4px 0 0 36px; font-size:13px; line-height:18px; }
 .balanceLabel { margin-top:20px; }
 .packageList,.methodList { gap:11px; }
 .packageCard { min-height:98px; height:98px; padding:14px 18px; border-radius:20px; }
 .packageCard[aria-pressed="true"] { height:116px; }
-.packageCard i { top:12px; left:18px; padding:2px 6px; font-size:9px; }
+.packageCard i { top:12px; left:18px; padding:2px 6px; font-size:9px; font-weight:900; }
 .packageCard i+div { margin-top:16px; }
 .packageCard div,.packageCard aside { gap:3px; }
 .packageCard div>b { font-size:21px; line-height:24px; }
+.packageCard div>b { display:flex; align-items:baseline; gap:5px; }
+.packageCard div>b>strong { color:var(--text); font-size:21px; font-weight:800; line-height:24px; }
+.packageCard div>b>small { color:var(--muted); font-size:14px; font-weight:600; line-height:18px; }
 .packageCard div strong { font-size:14px; line-height:18px; }
 .packageCard span,.methodList span { font-size:12px; line-height:16px; }
 .packageCard aside>b { font-size:17px; line-height:20px; }
