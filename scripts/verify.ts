@@ -17,6 +17,7 @@ import { verifyLanguage } from "./verify-language";
 import { closeDatabase, completedProjectCount, completeMockPayment, createPaymentIntent, createProject, failProject, finishProject, getBotLanguage, getUser, hasActiveProject, paymentOperations, paymentState, profileIdentity, projectById, reserveGeneration, saveProfileIdentity, setBotLanguage, updateProject } from "../src/lib/database";
 import { paymentPackages, priceFor } from "../src/lib/payments";
 import { createWatermark } from "../src/lib/watermark";
+import Database from "better-sqlite3";
 assert.ok(mockVideos.length > 0, "At least one mock video is required");
 assert.equal(videoListKeyboard(mockVideos).inline_keyboard.length, mockVideos.length);
 assert.equal(tariffsKeyboard(tariffs).inline_keyboard.length, tariffs.length + 1);
@@ -44,6 +45,9 @@ assert.deepEqual(verifyTelegramInitData(init.toString(), token), { id: "42", fir
 init.set("user", JSON.stringify({ id: 99 }));
 assert.throws(() => verifyTelegramInitData(init.toString(), token));
 const verificationDb = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "aibot-verify-")), "app.sqlite");
+const legacyDb = new Database(verificationDb);
+legacyDb.exec("CREATE TABLE users (telegram_id TEXT PRIMARY KEY, balance INTEGER NOT NULL, settings_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+legacyDb.close();
 process.env.DATABASE_PATH = verificationDb;
 process.env.TELEGRAM_ALLOWED_USER_IDS = "42";
 process.env.APP_URL = "http://verification.local";

@@ -65,9 +65,9 @@ export function db() {
     );
     CREATE INDEX IF NOT EXISTS payment_operations_user_created ON payment_operations(user_id, created_at DESC);
   `);
-  for (const [column, definition] of [["watermarked_result_path", "TEXT"], ["is_trial", "INTEGER NOT NULL DEFAULT 0"], ["trial_unlocked_at", "TEXT"], ["first_name", "TEXT"], ["username", "TEXT"]] as const) {
-    const known = database.prepare("PRAGMA table_info(projects)").all() as { name: string }[];
-    if (!known.some((item) => item.name === column)) database.exec(`ALTER TABLE projects ADD COLUMN ${column} ${definition}`);
+  for (const [table, column, definition] of [["projects", "watermarked_result_path", "TEXT"], ["projects", "is_trial", "INTEGER NOT NULL DEFAULT 0"], ["projects", "trial_unlocked_at", "TEXT"], ["users", "first_name", "TEXT"], ["users", "username", "TEXT"]] as const) {
+    const known = database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!known.some((item) => item.name === column)) database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
   return database;
 }
