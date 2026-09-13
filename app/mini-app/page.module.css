@@ -71,3 +71,62 @@
 .dark .languageRow>div { background:var(--bg); }
 .dark .profileList span svg,.dark .header svg { color:var(--muted); }
 .supportScreen h1 { margin:22px 0 12px; font-size:29px; letter-spacing:-1px; }.backButton { border:0; padding:0; background:none; color:var(--muted); font:700 16px var(--font-inter),sans-serif; cursor:pointer; }.backButton:before { content:"‹"; margin-right:10px; font-size:28px; line-height:0; vertical-align:-3px; }.supportLead { margin:0 0 25px; color:#5e596d; font-size:17px; line-height:1.5; }.dark .supportLead { color:var(--muted); }.faqCard { overflow:hidden; margin-bottom:21px; }.faqCard article { border-bottom:1px solid var(--line); }.faqCard article:last-child { border-bottom:0; }.faqCard article>button { width:100%; min-height:63px; padding:0 20px; border:0; background:none; color:var(--text); display:flex; align-items:center; justify-content:space-between; text-align:left; font:700 17px var(--font-inter),sans-serif; cursor:pointer; }.faqCard article>button span { color:var(--muted); font-size:23px; transition:transform .2s; }.faqCard article>button[aria-expanded="true"] span { transform:rotate(180deg); }.faqCard article>p { margin:0; padding:0 20px 22px; color:#5e596d; font-size:16px; line-height:1.55; }.dark .faqCard article>p { color:var(--muted); }.supportContact { width:100%; min-height:64px; border:0; border-radius:32px; background:linear-gradient(110deg,#ffb839,#fa617b 30%,#e71f89 57%,#7527dc); box-shadow:0 10px 22px #dc398839; color:#fff; font:800 18px var(--font-inter),sans-serif; cursor:pointer; }
+
+/* Match the compact proportions of the reference Telegram client. */
+.balanceCard { padding:24px 24px 26px; border-radius:22px; }
+.balanceCard>span,.balanceLabel { font-size:14px; line-height:18px; margin-bottom:10px; }
+.balanceCard h1 { font-size:40px; line-height:44px; }
+.balanceCard h1 small { font-size:16px; }
+.balanceCard p { margin:8px 0 20px; font-size:16px; line-height:20px; }
+.balanceCard button { min-height:59px; font-size:16px; }
+.bonusCard { padding:18px 22px 18px; border-radius:21px; margin-bottom:25px; }
+.bonusCard b { gap:13px; font-size:17px; line-height:22px; }
+.bonusCard p { margin:6px 0 0 42px; font-size:15px; line-height:23px; }
+.balanceLabel { margin-top:24px; }
+.packageList,.methodList { gap:13px; }
+.packageCard { min-height:122px; height:122px; padding:16px 21px; border-radius:22px; }
+.packageCard[aria-pressed="true"] { height:146px; }
+.packageCard i { top:13px; left:21px; }
+.packageCard i+div { margin-top:19px; }
+.packageCard div,.packageCard aside { gap:4px; }
+.packageCard div>b { font-size:26px; line-height:29px; }
+.packageCard div strong { font-size:16px; line-height:20px; }
+.packageCard span,.methodList span { font-size:14px; line-height:18px; }
+.packageCard aside>b { font-size:20px; line-height:23px; }
+.methodList button { min-height:63px; padding:15px 21px; border-radius:20px; font-size:16px; }
+.methodList button b { font-size:16px; }
+.totalCard { border-radius:20px; }
+.totalCard p { padding:15px 0; font-size:15px; }
+.terms { margin:18px 0; font-size:13px; }
+.payButton { min-height:60px; font-size:16px; }
+
+.styles,.colors { gap:8px; }
+.styles button,.colors button { height:48px; padding:0 18px; font-size:15px; }
+.colors button { padding:0 15px; }
+.colors { margin-bottom:30px; }
+.sectionTitle { margin:17px 0 10px; font-size:15px; }
+.sectionTitle strong { font-size:16px; }
+.upload { min-height:89px; border-radius:20px; padding:12px 18px; }
+.upload b { margin-bottom:5px; font-size:15px; }
+.upload span { font-size:14px; line-height:19px; }
+.toggleRow { min-height:48px; font-size:16px; }
+.toggleRow>span { gap:6px; }
+.hint { min-width:22px; min-height:22px; }
+.switch { width:55px; height:32px; }
+.generate { margin:27px 0 12px; min-height:64px; font-size:17px; }
+.generate small { font-size:11px; }
+.balanceSummary { font-size:13px; }
+
+.inviteScreen h1 { margin:17px 0 9px; font-size:27px; line-height:32px; letter-spacing:-.8px; }
+.inviteLead { margin:0 0 18px; font-size:15px; line-height:22px; }
+.inviteLinkCard { padding:18px 22px 20px; border-radius:21px; }
+.inviteLinkCard>strong,.inviteChartCard>strong { font-size:14px; line-height:18px; }
+.inviteLinkCard p { margin:10px 0 17px; font-size:15px; line-height:20px; }
+.inviteLinkCard>div { gap:10px; }
+.inviteLinkCard button { min-height:58px; font-size:16px; }
+.inviteStats { gap:12px; margin:16px 0; }
+.inviteStats article { min-height:103px; padding:18px 20px; border-radius:21px; }
+.inviteStats b { margin-bottom:8px; font-size:29px; }
+.inviteStats span { font-size:13px; }
+.inviteChartCard { min-height:124px; padding:20px; border-radius:21px; }
+.inviteChartCard>p { margin:14px 0 0; font-size:15px; line-height:22px; }
