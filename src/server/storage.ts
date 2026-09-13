@@ -4,12 +4,11 @@ import path from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { appConfig } from "@/src/server/config";
+import { MAX_VIDEO_UPLOAD_BYTES, videoUploadDetails } from "@/src/domain/video-upload";
 
-const MAX_BYTES = 100 * 1024 * 1024;
 const MIN_FREE_BYTES = 10 * 1024 * 1024 * 1024;
-const extensions: Record<string, string> = { "video/mp4": ".mp4", "video/quicktime": ".mov", "video/x-matroska": ".mkv", "video/webm": ".webm" };
 
-export function extensionFor(contentType: string | null) { return contentType ? extensions[contentType.split(";")[0].toLowerCase()] : undefined; }
+export function extensionFor(contentType: string | null) { return contentType ? videoUploadDetails({ name: "", type: contentType })?.extension : undefined; }
 export function projectDirectory(userId: string, projectId: string) { return path.join(appConfig().storageRoot, userId, projectId); }
 export function inputPath(userId: string, projectId: string, extension: string) { return path.join(projectDirectory(userId, projectId), `input${extension}`); }
 export function resultPath(userId: string, projectId: string) { return path.join(projectDirectory(userId, projectId), "result.mp4"); }
@@ -28,7 +27,7 @@ export async function writeUpload(body: ReadableStream<Uint8Array>, target: stri
   await fsp.mkdir(path.dirname(target), { recursive: true });
   const temporary = `${target}.part`;
   let size = 0;
-  const limiter = new Transform({ transform(chunk, _encoding, callback) { size += chunk.length; callback(size > MAX_BYTES ? new Error("file_too_large") : null, chunk); } });
+  const limiter = new Transform({ transform(chunk, _encoding, callback) { size += chunk.length; callback(size > MAX_VIDEO_UPLOAD_BYTES ? new Error("file_too_large") : null, chunk); } });
   try {
     await pipeline(Readable.fromWeb(body as never), limiter, fs.createWriteStream(temporary, { flags: "w" }));
     await fsp.rename(temporary, target);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { defaultMontageSettings, type MontageColor, type MontageSettings, type ProjectRecord } from "@/src/domain/montage";
 import type { ProjectResponse } from "@/src/domain/api";
+import { MAX_VIDEO_UPLOAD_BYTES, videoUploadDetails, type VideoContentType } from "@/src/domain/video-upload";
 import { Icon } from "./AppShell";
 import OptionHelp, { getToggles } from "./OptionHelp";
 import VideoRequirements from "./VideoRequirements";
@@ -11,6 +12,8 @@ import { telegramWebApp } from "./telegram";
 import styles from "@/app/mini-app/page.module.css";
 
 const colors: MontageColor[] = ["amber", "azure", "lime", "crimson"];
+type SelectedVideo = { file: File; contentType: VideoContentType; traceId: string };
+type VideoUploadEvent = "picker_opened" | "file_selected" | "file_rejected" | "metadata_loaded" | "preview_ready" | "metadata_error" | "upload_started";
 
 type Props = {
   authorized: boolean;
@@ -30,7 +33,7 @@ type Props = {
 export default function MontageScreen({ authorized, authPending, authError, balance, initialSettings, language, trialAvailable, header, nav, onBalanceChange, onSelectBalance, onTrialAvailableChange }: Props) {
   const [settings, setSettings] = useState(initialSettings || defaultMontageSettings);
   const [preview, setPreview] = useState<string>();
-  const [selectedFile, setSelectedFile] = useState<File>();
+  const [selectedVideo, setSelectedVideo] = useState<SelectedVideo>();
   const [project, setProject] = useState<ProjectRecord>();
   const [uploading, setUploading] = useState(0);
   const [message, setMessage] = useState("");
@@ -38,6 +41,8 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   const [requirementsOpen, setRequirementsOpen] = useState(false);
   const [helpOption, setHelpOption] = useState<ReturnType<typeof getToggles>[number]>();
   const fileInput = useRef<HTMLInputElement>(null);
+  const selection = useRef(0);
+  const traceId = useRef("");
   const t = copy[language];
   const options = getToggles(language);
   const overlayOpen = introOpen || requirementsOpen || Boolean(helpOption);
@@ -73,22 +78,54 @@ export default function MontageScreen({ authorized, authPending, authError, bala
     setSettings(next);
     if (authorized) void fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
   }
-  function selectFile(file?: File) {
+  function createTrace() {
+    const id = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    traceId.current = id;
+    return id;
+  }
+  function logUpload(event: VideoUploadEvent, details: Record<string, unknown> = {}, id = traceId.current) {
+    if (!id) return;
+    void fetch("/api/diagnostics/video-upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ traceId: id, event, details }), keepalive: true }).catch(() => undefined);
+  }
+  function selectFile(file: File | undefined, id = traceId.current || createTrace()) {
+    const currentSelection = ++selection.current;
     if (!file) return;
-    if (!/^video\/(mp4|quicktime|x-matroska|webm)$/.test(file.type) || file.size > 100 * 1024 * 1024) { setMessage(t.montage.fileInvalid); return; }
+    const upload = videoUploadDetails(file);
+    const fileDetails = { extension: file.name.split(".").pop()?.toLowerCase(), contentType: file.type || undefined, size: file.size };
+    logUpload("file_selected", fileDetails, id);
+    if (!upload || file.size > MAX_VIDEO_UPLOAD_BYTES) {
+      setSelectedVideo(undefined); setPreview(undefined); setMessage(t.montage.fileInvalid);
+      logUpload("file_rejected", { ...fileDetails, reason: !upload ? "unsupported_type" : "file_too_large" }, id);
+      return;
+    }
+    setSelectedVideo(undefined); setMessage(t.montage.checking);
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
-    video.src = url;
+    video.preload = "metadata";
     video.onloadedmetadata = () => {
-      if (video.duration < 2 || video.duration > 30) { URL.revokeObjectURL(url); setMessage(t.montage.videoInvalid); return; }
+      if (currentSelection !== selection.current) { URL.revokeObjectURL(url); return; }
+      const metadata = { ...fileDetails, duration: video.duration, width: video.videoWidth, height: video.videoHeight };
+      logUpload("metadata_loaded", metadata, id);
+      if (!Number.isFinite(video.duration) || video.duration < 2 || video.duration > 30) {
+        URL.revokeObjectURL(url); setMessage(t.montage.videoInvalid); logUpload("file_rejected", { ...metadata, reason: "invalid_duration" }, id); return;
+      }
       if (preview) URL.revokeObjectURL(preview);
-      setPreview(url); setSelectedFile(file); setMessage(t.montage.ready);
+      setPreview(url); setSelectedVideo({ file, contentType: upload.contentType, traceId: id }); setMessage(t.montage.ready);
+      logUpload("preview_ready", metadata, id);
     };
-    video.onerror = () => { URL.revokeObjectURL(url); setMessage(t.montage.videoUnreadable); };
+    video.onerror = () => {
+      if (currentSelection !== selection.current) { URL.revokeObjectURL(url); return; }
+      URL.revokeObjectURL(url); setMessage(t.montage.videoUnreadable);
+      logUpload("metadata_error", { ...fileDetails, mediaError: video.error?.code, reason: "video_metadata_error" }, id);
+    };
+    video.src = url;
+    video.load();
   }
   async function uploadAndGenerate() {
     if (!authorized) return;
-    if (!selectedFile) { setMessage(t.montage.chooseVideo); return; }
+    if (!selectedVideo) { setMessage(t.montage.chooseVideo); return; }
+    const { file, contentType, traceId: uploadTraceId } = selectedVideo;
+    setMessage(""); logUpload("upload_started", { contentType, size: file.size }, uploadTraceId);
     const created = await fetch("/api/projects", { method: "POST" });
     const createdData = await created.json() as ProjectResponse;
     if (!created.ok || !createdData.project) { setMessage(createdData.error || t.montage.createFailed); return; }
@@ -96,11 +133,12 @@ export default function MontageScreen({ authorized, authPending, authError, bala
     const uploaded = await new Promise<boolean>((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", `/api/projects/${createdData.project!.id}/input`);
-      xhr.setRequestHeader("Content-Type", selectedFile.type);
+      xhr.setRequestHeader("Content-Type", contentType);
+      xhr.setRequestHeader("X-Upload-Trace-Id", uploadTraceId);
       xhr.upload.onprogress = (event) => { if (event.lengthComputable) setUploading(Math.round(event.loaded / event.total * 100)); };
       xhr.onload = () => { const data = JSON.parse(xhr.responseText || "{}") as { error?: string }; if (!(xhr.status >= 200 && xhr.status < 300)) setMessage(data.error || t.montage.uploadFailed); resolve(xhr.status >= 200 && xhr.status < 300); };
       xhr.onerror = () => { setMessage(t.montage.uploadFailed); resolve(false); };
-      xhr.send(selectedFile);
+      xhr.send(file);
     });
     if (!uploaded) { setUploading(0); return; }
     const queued = await fetch(`/api/projects/${createdData.project.id}/generate`, { method: "POST" });
@@ -121,13 +159,14 @@ export default function MontageScreen({ authorized, authPending, authError, bala
     <div className={styles.styles}><button className={styles.activeStyle}>Glass</button><button disabled>Poster <small>{t.montage.stylesSoon}</small></button><button disabled>Editorial <small>{t.montage.stylesSoon}</small></button></div>
     <div className={styles.colors}>{colors.map((color, index) => <button key={color} className={settings.color === color ? styles.colorActive : ""} onClick={() => save({ ...settings, color })}><i data-color={color} />{t.montage.colors[index]}</button>)}</div>
     <div className={styles.sectionTitle}><strong>{t.montage.video}</strong><button type="button" className={styles.requirementsLink} onClick={() => setRequirementsOpen(true)}><Icon name="help" /> {t.montage.requirements}</button></div>
-    <label className={styles.upload} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); selectFile(event.dataTransfer.files[0]); }}><input ref={fileInput} type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" onChange={(event) => selectFile(event.target.files?.[0])} /><Icon name="upload" /><div><b>{selectedFile ? selectedFile.name : t.montage.upload}</b><span>{uploading ? `${language === "ru" ? "Загрузка" : "Uploading"} ${uploading}%` : t.montage.uploadHint}</span></div></label>
+    <label className={styles.upload} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const id = createTrace(); selectFile(event.dataTransfer.files[0], id); }}><input ref={fileInput} type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" onClick={() => { const id = createTrace(); logUpload("picker_opened", {}, id); }} onChange={(event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; selectFile(file); }} /><Icon name="upload" /><div><b>{selectedVideo ? selectedVideo.file.name : t.montage.upload}</b><span>{uploading ? `${language === "ru" ? "Загрузка" : "Uploading"} ${uploading}%` : t.montage.uploadHint}</span></div></label>
+    {message && <p className={styles.status} role="status">{message}</p>}
     <Toggle {...options[0]} help={() => setHelpOption(options[0])} value={settings.trimVideo} change={(value) => save({ ...settings, trimVideo: value })} featured />
     <div className={styles.sectionTitle}><strong>{t.montage.parameters}</strong></div>
     {options.slice(1).map((option) => <Toggle key={option.key} label={option.label} help={() => setHelpOption(option)} value={settings[option.key]} change={(value) => save({ ...settings, [option.key]: value })} />)}
     <button className={styles.generate} onClick={needsTopUp ? onSelectBalance : uploadAndGenerate} disabled={!authorized || authPending || busy}>{authPending ? t.montage.connecting : busy ? t.montage.processing : trialAvailable ? t.montage.trial : needsTopUp ? t.montage.topUp : t.montage.generate}<small>{authPending ? t.profile.profile : trialAvailable ? t.montage.trialHint : needsTopUp ? t.montage.topUpHint(23 - balance) : `23 ${t.montage.tokens}`}</small></button>
     <p className={styles.balanceSummary}><span>{t.montage.balance}</span> {authorized ? balance : "—"} {t.montage.tokens}</p>
-    {(authError || message) && <p className={styles.status} role="status">{authError || message}</p>}
+    {authError && <p className={styles.status} role="status">{authError}</p>}
     {nav}
     {requirementsOpen && <VideoRequirements language={language} onClose={closeOverlay} />}
     {helpOption && <OptionHelp language={language} option={helpOption} onClose={closeOverlay} />}
