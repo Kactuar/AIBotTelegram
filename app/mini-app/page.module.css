@@ -117,16 +117,17 @@
 .generate small { font-size:11px; }
 .balanceSummary { font-size:13px; }
 
+.inviteScreen { padding-top:21px; }
 .inviteScreen h1 { margin:17px 0 9px; font-size:27px; line-height:32px; letter-spacing:-.8px; }
-.inviteLead { margin:0 0 18px; font-size:15px; line-height:22px; }
-.inviteLinkCard { padding:18px 22px 20px; border-radius:21px; }
+.inviteLead { margin:0 0 18px; font-size:14px; line-height:20px; }
+.inviteLinkCard { padding:18px 22px 13px; border-radius:21px; }
 .inviteLinkCard>strong,.inviteChartCard>strong { font-size:14px; line-height:18px; }
-.inviteLinkCard p { margin:10px 0 17px; font-size:15px; line-height:20px; }
+.inviteLinkCard p { margin:7px 0 11px; font-size:15px; line-height:18px; }
 .inviteLinkCard>div { gap:10px; }
-.inviteLinkCard button { min-height:58px; font-size:16px; }
-.inviteStats { gap:12px; margin:16px 0; }
-.inviteStats article { min-height:103px; padding:18px 20px; border-radius:21px; }
-.inviteStats b { margin-bottom:8px; font-size:29px; }
-.inviteStats span { font-size:13px; }
-.inviteChartCard { min-height:124px; padding:20px; border-radius:21px; }
-.inviteChartCard>p { margin:14px 0 0; font-size:15px; line-height:22px; }
+.inviteLinkCard button { height:58px; min-height:0; padding:0; font-size:16px; }
+.inviteStats { gap:12px; margin:13px 0; }
+.inviteStats article { height:82px; min-height:0; padding:14px 19px; border-radius:21px; }
+.inviteStats b { margin-bottom:6px; font-size:23px; }
+.inviteStats span { font-size:12px; }
+.inviteChartCard { height:98px; min-height:0; padding:16px; border-radius:21px; }
+.inviteChartCard>p { margin:10px 0 0; font-size:13px; line-height:18px; }
