@@ -3,14 +3,15 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import ffmpegPath from "ffmpeg-static";
+import { inspectVideo } from "./video-processing";
 
 const executable = process.env.FFMPEG_PATH || ffmpegPath;
 const glyphs: Record<string, string[]> = {
   B: ["1110", "1001", "1001", "1110", "1001", "1001", "1110"], R: ["1110", "1001", "1001", "1110", "1010", "1001", "1001"], A: ["0110", "1001", "1001", "1111", "1001", "1001", "1001"], N: ["1001", "1101", "1101", "1011", "1011", "1001", "1001"], D: ["1110", "1001", "1001", "1001", "1001", "1001", "1110"], L: ["1000", "1000", "1000", "1000", "1000", "1000", "1111"], Y: ["1001", "1001", "0110", "0010", "0010", "0010", "0010"],
 };
 
-function writeWatermarkLayer(filename: string) {
-  const width = 360; const height = 640; const pixels = Buffer.alloc(width * height * 3);
+function writeWatermarkLayer(filename: string, width: number, height: number) {
+  const pixels = Buffer.alloc(width * height * 3);
   const draw = (text: string, x: number, y: number) => text.split("").forEach((letter, letterIndex) => glyphs[letter].forEach((row, rowIndex) => [...row].forEach((pixel, pixelIndex) => {
     if (pixel !== "1") return;
     for (let dy = 0; dy < 5; dy++) for (let dx = 0; dx < 5; dx++) {
@@ -25,9 +26,10 @@ function writeWatermarkLayer(filename: string) {
 export async function createWatermark(input: string, output: string) {
   if (!executable) throw new Error("ffmpeg_not_configured");
   const layer = path.join(path.dirname(output), `.brandly-watermark-${crypto.randomUUID()}.ppm`);
-  writeWatermarkLayer(layer);
+  const { width, height } = await inspectVideo(input, false);
+  writeWatermarkLayer(layer, width, height);
   const source = layer.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
-  const filter = `movie='${source}',format=rgba,colorkey=0x000000:0.01:0.0,colorchannelmixer=aa=0.38[watermark];[watermark][0:v]scale2ref=w=main_w:h=main_h[scaled][video];[video][scaled]overlay=0:0[out]`;
+  const filter = `movie='${source}',format=rgba,colorkey=0x000000:0.01:0.0,colorchannelmixer=aa=0.38[watermark];[0:v][watermark]overlay=0:0:eof_action=repeat[out]`;
   try {
     await new Promise<void>((resolve, reject) => {
       const process = spawn(executable, ["-y", "-i", input, "-filter_complex", filter, "-map", "[out]", "-map", "0:a?", "-c:v", "libx264", "-c:a", "copy", output], { stdio: ["ignore", "ignore", "pipe"] });
