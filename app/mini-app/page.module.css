@@ -48,7 +48,7 @@
 .inviteStats { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0; }.inviteStats article { min-height:103px; padding:20px; border-radius:23px; box-sizing:border-box; }.inviteStats b,.inviteStats span { display:block; }.inviteStats b { margin-bottom:10px; font-size:30px; line-height:1; }.inviteStats span { color:var(--muted); font-size:14px; line-height:1.3; }
 .inviteChartCard { min-height:124px; padding:24px 20px; border-radius:24px; box-sizing:border-box; }.inviteChartCard>p { margin:17px 0 0; color:var(--muted); font-size:16px; line-height:1.5; }.inviteLegend { display:flex; gap:16px; margin:16px 0 8px; color:var(--muted); font-size:12px; }.inviteLegend span { display:flex; align-items:center; gap:5px; }.inviteLegend i,.inviteChart i { display:inline-block; border-radius:5px; }.inviteLegend i { width:9px; height:9px; }.inviteLegend i[data-kind="invited"],.inviteChart i[data-kind="invited"] { background:#8a2ce1; }.inviteLegend i[data-kind="payments"],.inviteChart i[data-kind="payments"] { background:#ff9861; }.inviteChart { display:flex; align-items:flex-end; justify-content:space-between; gap:5px; height:142px; }.inviteChart>div { display:flex; flex:1; min-width:0; height:100%; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px; }.inviteChart section { display:flex; align-items:flex-end; justify-content:center; gap:3px; width:100%; height:112px; border-bottom:1px solid var(--line); }.inviteChart section i { width:min(12px,38%); min-height:2px; }.inviteChart>div>span { overflow:hidden; width:100%; color:var(--muted); font-size:9px; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
 .inviteLoading { margin:80px 0; color:var(--muted); font-size:16px; line-height:1.5; text-align:center; }
-@media (max-width:380px) { .app { padding-left:15px; padding-right:15px; }.preview { width:310px; }.styles button { padding:0 15px; }.colors button { padding:0 12px; }.colors { gap:5px; } .requirementsContent { padding:20px; } .requirements h2 { font-size:22px; } .requirements p { font-size:16px; } }
+@media (max-width:380px) { .app { padding-left:15px; padding-right:15px; }.preview { width:270px; }.styles button { padding:0 15px; }.colors button { padding:0 12px; }.colors { gap:5px; } .requirementsContent { padding:20px; } .requirements h2 { font-size:22px; } .requirements p { font-size:16px; } }
 @media (prefers-reduced-motion: reduce) { .app,.app * { transition:none!important; scroll-behavior:auto!important; } }
 .profileScreen,.supportScreen { padding-bottom:22px; }
 .profileIdentity,.profileCount,.profileList,.languageRow,.faqCard { background:var(--paper); box-shadow:0 2px 5px #2722300c; border-radius:18px; }
@@ -134,3 +134,26 @@
 .inviteStats span { font-size:12px; }
 .inviteChartCard { height:98px; min-height:0; padding:16px; border-radius:21px; }
 .inviteChartCard>p { margin:10px 0 0; font-size:13px; line-height:18px; }
+
+/* Match the compact montage controls of the reference Telegram client. */
+.app,.app button,.app input,.app textarea,.app a,.app .requirements,.placeholder { font-family:"Roboto Referral",Arial,sans-serif; }
+.inviteLead { font-family:inherit; font-weight:400; }
+.preview { width:min(100%,270px); margin-bottom:24px; }
+.play { top:11px; right:11px; width:34px; height:34px; }
+.play svg { width:18px; height:18px; }
+.styles button,.colors button { height:38px; border-radius:20px; font-size:14px; }
+.sectionTitle { font-size:14px; }
+.sectionTitle strong { font-size:14px; }
+.sectionTitle svg,.hint svg { width:14px; height:14px; }
+.upload { min-height:92px; }
+.upload>svg { width:26px; height:26px; padding:4px; }
+.upload b { margin-bottom:4px; font-size:14px; }
+.upload span { font-size:13px; line-height:18px; }
+.toggleRow { min-height:38px; font-size:14px; }
+.toggleRow>span { gap:5px; }
+.hint { min-width:18px; min-height:18px; }
+.switch { width:44px; height:26px; padding:3px; border-radius:14px; }
+.switch i { width:20px; height:20px; }
+.switchOn i { transform:translateX(18px); }
+.generate { min-height:62px; font-size:16px; }
+.balanceSummary { font-size:12px; }
