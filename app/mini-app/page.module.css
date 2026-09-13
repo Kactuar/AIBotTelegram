@@ -75,34 +75,6 @@
 .dark .profileList span svg,.dark .header svg { color:var(--muted); }
 .supportScreen h1 { margin:22px 0 12px; font-size:29px; letter-spacing:-1px; }.backButton { border:0; padding:0; background:none; color:var(--muted); font:700 16px var(--font-inter),sans-serif; cursor:pointer; }.backButton:before { content:"‹"; margin-right:10px; font-size:28px; line-height:0; vertical-align:-3px; }.supportLead { margin:0 0 25px; color:#5e596d; font-size:17px; line-height:1.5; }.dark .supportLead { color:var(--muted); }.faqCard { overflow:hidden; margin-bottom:21px; }.faqCard article { border-bottom:1px solid var(--line); }.faqCard article:last-child { border-bottom:0; }.faqCard article>button { width:100%; min-height:63px; padding:0 20px; border:0; background:none; color:var(--text); display:flex; align-items:center; justify-content:space-between; text-align:left; font:700 17px var(--font-inter),sans-serif; cursor:pointer; }.faqCard article>button span { color:var(--muted); font-size:23px; transition:transform .2s; }.faqCard article>button[aria-expanded="true"] span { transform:rotate(180deg); }.faqCard article>p { margin:0; padding:0 20px 22px; color:#5e596d; font-size:16px; line-height:1.55; }.dark .faqCard article>p { color:var(--muted); }.supportContact { width:100%; min-height:64px; border:0; border-radius:32px; background:linear-gradient(110deg,#ffb839,#fa617b 30%,#e71f89 57%,#7527dc); box-shadow:0 10px 22px #dc398839; color:#fff; font:800 18px var(--font-inter),sans-serif; cursor:pointer; }
 
-/* Match the compact proportions of the reference Telegram client. */
-.balanceCard { padding:24px 24px 26px; border-radius:22px; }
-.balanceCard>span,.balanceLabel { font-size:14px; line-height:18px; margin-bottom:10px; }
-.balanceCard h1 { font-size:40px; line-height:44px; }
-.balanceCard h1 small { font-size:16px; }
-.balanceCard p { margin:8px 0 20px; font-size:16px; line-height:20px; }
-.balanceCard button { min-height:59px; font-size:16px; }
-.bonusCard { padding:18px 22px 18px; border-radius:21px; margin-bottom:25px; }
-.bonusCard b { gap:13px; font-size:17px; line-height:22px; }
-.bonusCard p { margin:6px 0 0 42px; font-size:15px; line-height:23px; }
-.balanceLabel { margin-top:24px; }
-.packageList,.methodList { gap:13px; }
-.packageCard { min-height:122px; height:122px; padding:16px 21px; border-radius:22px; }
-.packageCard[aria-pressed="true"] { height:146px; }
-.packageCard i { top:13px; left:21px; }
-.packageCard i+div { margin-top:19px; }
-.packageCard div,.packageCard aside { gap:4px; }
-.packageCard div>b { font-size:26px; line-height:29px; }
-.packageCard div strong { font-size:16px; line-height:20px; }
-.packageCard span,.methodList span { font-size:14px; line-height:18px; }
-.packageCard aside>b { font-size:20px; line-height:23px; }
-.methodList button { min-height:63px; padding:15px 21px; border-radius:20px; font-size:16px; }
-.methodList button b { font-size:16px; }
-.totalCard { border-radius:20px; }
-.totalCard p { padding:15px 0; font-size:15px; }
-.terms { margin:18px 0; font-size:13px; }
-.payButton { min-height:60px; font-size:16px; }
-
 .styles,.colors { gap:8px; }
 .styles button,.colors button { height:48px; padding:0 18px; font-size:15px; }
 .colors button { padding:0 15px; }
@@ -165,25 +137,25 @@
 .balanceCard h1 small { font-size:14px; }
 .balanceCard p { margin:6px 0 16px; font-size:14px; line-height:18px; }
 .balanceCard button { height:48px; min-height:0; border-radius:24px; font-size:14px; }
-.bonusCard { padding:14px 18px 14px 35px; margin-bottom:22px; border-radius:20px; }
-.bonusCard b { gap:12px; font-size:14px; font-weight:800; line-height:18px; }
-.bonusCard b:first-letter { font-size:inherit; }
-.bonusIcon { flex:0 0 24px; font-size:28px; font-style:normal; line-height:1; }
-.bonusCard p { margin:4px 0 0 36px; font-size:13px; line-height:18px; }
+.bonusCard { display:grid; grid-template-columns:24px minmax(0,1fr); column-gap:12px; align-items:start; padding:14px 18px; margin-bottom:22px; border-radius:20px; }
+.bonusIcon { margin-top:3px; font-size:28px; font-style:normal; line-height:1; }
+.bonusContent { min-width:0; }
+.bonusContent>strong { display:block; font-size:14px; font-weight:800; line-height:18px; }
+.bonusContent>p { margin:4px 0 0; color:#655f72; font-size:13px; line-height:18px; }
 .balanceLabel { margin-top:20px; }
 .packageList,.methodList { gap:11px; }
 .packageCard { min-height:98px; height:98px; padding:14px 18px; border-radius:20px; }
 .packageCard[aria-pressed="true"] { height:116px; }
 .packageCard i { top:12px; left:18px; padding:2px 6px; font-size:9px; font-weight:900; }
-.packageCard i+div { margin-top:16px; }
-.packageCard div,.packageCard aside { gap:3px; }
-.packageCard div>b { font-size:21px; line-height:24px; }
-.packageCard div>b { display:flex; align-items:baseline; gap:5px; }
-.packageCard div>b>strong { color:var(--text); font-size:21px; font-weight:800; line-height:24px; }
-.packageCard div>b>small { color:var(--muted); font-size:14px; font-weight:600; line-height:18px; }
-.packageCard div strong { font-size:14px; line-height:18px; }
+.packageCard i+.packageDetails { margin-top:16px; }
+.packageDetails,.packagePrice { display:flex; flex-direction:column; gap:3px; }
+.packageDetails>b { display:flex; align-items:baseline; gap:5px; font-size:21px; line-height:24px; }
+.packageDetails>b>strong { color:var(--text); font-size:21px; font-weight:800; line-height:24px; }
+.packageDetails>b>small { color:var(--muted); font-size:14px; font-weight:600; line-height:18px; }
+.packageDetails>strong { color:#575165; font-size:14px; line-height:18px; }
 .packageCard span,.methodList span { font-size:12px; line-height:16px; }
-.packageCard aside>b { font-size:17px; line-height:20px; }
+.packagePrice { align-items:flex-end; justify-content:center; }
+.packagePrice>b { font-size:17px; line-height:20px; }
 .methodList button { height:52px; min-height:0; padding:12px 18px; border-radius:18px; font-size:14px; }
 .methodList button b { font-size:14px; }
 .totalCard { padding:8px 18px; border-radius:18px; }
