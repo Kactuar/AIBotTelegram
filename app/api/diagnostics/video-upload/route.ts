@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/src/server/auth";
+import { unauthorizedResponse } from "@/src/server/http";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,7 @@ const number = (value: unknown) => typeof value === "number" && Number.isFinite(
 export async function POST(request: Request) {
   let userId: string;
   try { userId = await requireUserId(); }
-  catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  catch { return unauthorizedResponse(); }
   if (Number(request.headers.get("content-length") || 0) > 2048) return NextResponse.json({ error: "Diagnostic payload is too large" }, { status: 413 });
 
   try {

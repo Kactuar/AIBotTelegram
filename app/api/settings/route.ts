@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUserId } from "@/src/server/auth";
 import { getUser, saveSettings } from "@/src/server/users";
 import { defaultMontageSettings, montageColors, type MontageColor, type MontageSettings } from "@/src/domain/montage";
+import { internalServerError, unauthorizedResponse } from "@/src/server/http";
 
 export const runtime = "nodejs";
 const valid = (value: unknown): value is MontageSettings => {
@@ -11,15 +12,22 @@ const valid = (value: unknown): value is MontageSettings => {
 };
 
 export async function GET() {
-  try { const user = getUser(await requireUserId()); return NextResponse.json({ settings: user.settings, balance: user.balance }); }
-  catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  let userId: string;
+  try { userId = await requireUserId(); } catch { return unauthorizedResponse(); }
+  try { const user = getUser(userId); return NextResponse.json({ settings: user.settings, balance: user.balance }); }
+  catch (error) { return internalServerError("GET /api/settings", error); }
 }
 
 export async function PUT(request: Request) {
+  let userId: string;
+  try { userId = await requireUserId(); } catch { return unauthorizedResponse(); }
+  let settings: unknown;
   try {
-    const settings = await request.json();
-    if (!valid(settings)) return NextResponse.json({ error: "Invalid settings" }, { status: 400 });
-    const user = saveSettings(await requireUserId(), { ...defaultMontageSettings, ...settings });
+    settings = await request.json();
+  } catch { return NextResponse.json({ error: "Invalid settings" }, { status: 400 }); }
+  if (!valid(settings)) return NextResponse.json({ error: "Invalid settings" }, { status: 400 });
+  try {
+    const user = saveSettings(userId, { ...defaultMontageSettings, ...settings });
     return NextResponse.json({ settings: user.settings, balance: user.balance });
-  } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  } catch (error) { return internalServerError("PUT /api/settings", error); }
 }
