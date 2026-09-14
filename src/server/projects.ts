@@ -2,6 +2,19 @@ import { type MontageSettings, type ProjectRecord, type ProjectStatus } from "@/
 import { db, now } from "@/src/server/database";
 import { getUser } from "@/src/server/users";
 
+export function publicProject(project: ProjectRecord) {
+  return {
+    id: project.id,
+    status: project.status,
+    errorCode: project.errorCode,
+    isTrial: project.isTrial,
+    trialUnlockedAt: project.trialUnlockedAt,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
+    resultExpiresAt: project.resultExpiresAt,
+  };
+}
+
 export interface OpenRouterJobRecord {
   projectId: string;
   segmentIndex: 1 | 2;
@@ -28,11 +41,23 @@ export function projectById(id: string) {
 export function availableProjects(userId: string) {
   return db().prepare("SELECT * FROM projects WHERE user_id = ? AND status = 'completed' AND result_expires_at > ? ORDER BY created_at DESC").all(userId, now()).map((row) => toProject(row as Record<string, unknown>));
 }
+export function activeProject(userId: string) {
+  const row = db().prepare("SELECT * FROM projects WHERE user_id = ? AND status IN ('draft', 'uploading', 'uploaded', 'queued', 'processing') ORDER BY created_at DESC LIMIT 1").get(userId) as Record<string, unknown> | undefined;
+  return row ? toProject(row) : undefined;
+}
 export function createProject(id: string, userId: string, settings: MontageSettings) {
   getUser(userId);
   const time = now();
   db().prepare("INSERT INTO projects (id, user_id, settings_json, status, created_at, updated_at) VALUES (?, ?, ?, 'draft', ?, ?)").run(id, userId, JSON.stringify(settings), time, time);
   return projectById(id)!;
+}
+export function createProjectIfNoActive(id: string, userId: string, settings: MontageSettings) {
+  getUser(userId);
+  const time = now();
+  const inserted = db().prepare(`INSERT INTO projects (id, user_id, settings_json, status, created_at, updated_at)
+    SELECT ?, ?, ?, 'draft', ?, ?
+    WHERE NOT EXISTS (SELECT 1 FROM projects WHERE user_id = ? AND status IN ('draft', 'uploading', 'uploaded', 'queued', 'processing'))`).run(id, userId, JSON.stringify(settings), time, time, userId);
+  return inserted.changes ? projectById(id)! : undefined;
 }
 export function updateProject(id: string, fields: Partial<Pick<ProjectRecord, "inputPath" | "resultPath" | "watermarkedResultPath" | "trialUnlockedAt" | "runwayTaskId" | "prompt" | "errorCode" | "resultExpiresAt">> & { status?: ProjectStatus; reservedTokens?: number; isTrial?: boolean }) {
   const columns: string[] = [];
@@ -46,6 +71,25 @@ export function updateProject(id: string, fields: Partial<Pick<ProjectRecord, "i
 }
 export function hasActiveProject(userId: string) {
   return Boolean(db().prepare("SELECT 1 FROM projects WHERE user_id = ? AND status IN ('draft', 'uploading', 'uploaded', 'queued', 'processing') LIMIT 1").get(userId));
+}
+export function startProjectUpload(id: string, userId: string) {
+  const changed = db().prepare("UPDATE projects SET status = 'uploading', updated_at = ? WHERE id = ? AND user_id = ? AND status = 'draft'").run(now(), id, userId);
+  return changed.changes ? projectById(id) : undefined;
+}
+export function completeProjectUpload(id: string, userId: string, input: string) {
+  const changed = db().prepare("UPDATE projects SET status = 'uploaded', input_path = ?, updated_at = ? WHERE id = ? AND user_id = ? AND status = 'uploading'").run(input, now(), id, userId);
+  return changed.changes ? projectById(id) : undefined;
+}
+export function cancelProject(id: string, userId: string) {
+  return db().transaction(() => {
+    const project = projectById(id);
+    if (!project || project.userId !== userId) return "not_found" as const;
+    if (!["draft", "uploading", "uploaded", "queued"].includes(project.status)) return "not_cancellable" as const;
+    const time = now();
+    if (project.reservedTokens) db().prepare("UPDATE users SET balance = balance + ?, updated_at = ? WHERE telegram_id = ?").run(project.reservedTokens, time, userId);
+    db().prepare("UPDATE projects SET status = 'failed', error_code = 'cancelled', reserved_tokens = 0, updated_at = ? WHERE id = ?").run(time, id);
+    return "cancelled" as const;
+  })();
 }
 export function reserveGeneration(id: string, userId: string, prompt: string) {
   const database = db();
@@ -80,14 +124,29 @@ export function finishProject(id: string, resultPath: string, watermarkedResultP
 }
 export function failProject(id: string, code: string) {
   const database = db();
-  database.transaction(() => {
+  return database.transaction(() => {
     const project = projectById(id);
-    if (!project) return;
+    if (!project || project.status === "completed" || project.status === "failed") return undefined;
     if (project.reservedTokens) database.prepare("UPDATE users SET balance = balance + ?, updated_at = ? WHERE telegram_id = ?").run(project.reservedTokens, now(), project.userId);
     updateProject(id, { status: "failed", errorCode: code, reservedTokens: 0 });
+    return projectById(id);
   })();
 }
 export function expiredResults() { return db().prepare("SELECT * FROM projects WHERE status = 'completed' AND result_expires_at < ?").all(now()).map((row) => toProject(row as Record<string, unknown>)); }
+export function staleProjects(reference = Date.now()) {
+  const cutoffs = {
+    draft: new Date(reference - 60 * 60 * 1000).toISOString(),
+    uploading: new Date(reference - 30 * 60 * 1000).toISOString(),
+    uploaded: new Date(reference - 60 * 60 * 1000).toISOString(),
+    queued: new Date(reference - 60 * 60 * 1000).toISOString(),
+  };
+  return db().prepare(`SELECT * FROM projects WHERE
+    (status = 'draft' AND updated_at < ?) OR
+    (status = 'uploading' AND updated_at < ?) OR
+    (status = 'uploaded' AND updated_at < ?) OR
+    (status = 'queued' AND updated_at < ?)`)
+    .all(cutoffs.draft, cutoffs.uploading, cutoffs.uploaded, cutoffs.queued).map((row) => toProject(row as Record<string, unknown>));
+}
 export function completedProjectCount(telegramId: string) {
   return Number((db().prepare("SELECT COUNT(*) AS count FROM projects WHERE user_id = ? AND status = 'completed'").get(telegramId) as { count: number }).count);
 }

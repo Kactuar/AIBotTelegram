@@ -53,4 +53,29 @@ describe("projects route", () => {
     expect(Number(expires)).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 60 * 60);
     expect(validDownloadSignature(active.id, expires, download.searchParams.get("signature"))).toBe(true);
   });
+
+  it("returns a safe active project so the Mini App can resume it after reload", async () => {
+    const fixture = createTestDatabase(); remove = fixture.remove;
+    requireUserId.mockResolvedValue("42");
+    const active = createProject("active-project", "42", defaultMontageSettings);
+    updateProject(active.id, { status: "uploaded", inputPath: "/private/input.mp4", prompt: "private" });
+
+    const response = await GET();
+    const payload = await response.json() as { activeProject?: Record<string, unknown> };
+    expect(payload.activeProject).toMatchObject({ id: active.id, status: "uploaded" });
+    expect(payload.activeProject).not.toHaveProperty("inputPath");
+    expect(payload.activeProject).not.toHaveProperty("prompt");
+  });
+
+  it("does not misreport a database failure as unauthorized", async () => {
+    const fixture = createTestDatabase({ migrate: false }); remove = fixture.remove;
+    requireUserId.mockResolvedValue("42");
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET();
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({ error: "Internal server error" });
+    expect(error).toHaveBeenCalledWith("API request failed", expect.objectContaining({ route: "GET /api/projects" }));
+  });
 });

@@ -3,8 +3,9 @@ import fs from "node:fs/promises";
 import { NextResponse } from "next/server";
 import { downloadSignature, requireUserId } from "@/src/server/auth";
 import { appConfig } from "@/src/server/config";
-import { availableProjects, createProject, hasActiveProject } from "@/src/server/projects";
+import { activeProject, availableProjects, createProjectIfNoActive, publicProject } from "@/src/server/projects";
 import { getUser } from "@/src/server/users";
+import { internalServerError, unauthorizedResponse } from "@/src/server/http";
 
 export const runtime = "nodejs";
 const DOWNLOAD_LINK_SECONDS = 60 * 60;
@@ -23,18 +24,25 @@ async function existingProject(project: ReturnType<typeof availableProjects>[num
 }
 
 export async function GET() {
+  let userId: string;
   try {
-    const userId = await requireUserId();
+    userId = await requireUserId();
+  } catch { return unauthorizedResponse(); }
+  try {
     const projects = (await Promise.all(availableProjects(userId).map(existingProject))).filter((project): project is NonNullable<typeof project> => Boolean(project));
-    return NextResponse.json({ projects });
-  } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+    const active = activeProject(userId);
+    return NextResponse.json({ projects, ...(active ? { activeProject: publicProject(active) } : {}) });
+  } catch (error) { return internalServerError("GET /api/projects", error); }
 }
 
 export async function POST() {
+  let userId: string;
   try {
-    const userId = await requireUserId();
-    if (hasActiveProject(userId)) return NextResponse.json({ error: "Finish the current project first" }, { status: 409 });
-    const project = createProject(crypto.randomUUID(), userId, getUser(userId).settings);
-    return NextResponse.json({ project });
-  } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+    userId = await requireUserId();
+  } catch { return unauthorizedResponse(); }
+  try {
+    const project = createProjectIfNoActive(crypto.randomUUID(), userId, getUser(userId).settings);
+    if (!project) return NextResponse.json({ error: "Finish the current project first" }, { status: 409 });
+    return NextResponse.json({ project: publicProject(project) });
+  } catch (error) { return internalServerError("POST /api/projects", error); }
 }
