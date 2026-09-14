@@ -2,7 +2,7 @@
 
 Одно приложение на Next.js принимает webhook от Telegram и обслуживает маршрут `/mini-app`. Отдельный worker под управлением PM2 получает проекты из очереди SQLite и вызывает OpenRouter `black-forest-labs/flux-video-edit`.
 
-Mini App реализует экран создания монтажа, вдохновлённый Brandly: светлая и тёмная темы, анимированный выбор цвета, вступительное модальное окно, локальный предпросмотр, загрузка файлов через drag-and-drop, сохранение настроек и polling. Остальные четыре вкладки навигации намеренно являются только визуальными заглушками.
+Mini App реализует создание монтажа, баланс с mock-платежами, профиль с языковыми настройками, приглашения с постоянной реферальной атрибуцией и юридические страницы. Загрузка, генерация и получение результата отражают реальные статусы проекта; для отсутствующих данных интерфейс показывает честное состояние загрузки или ошибки.
 
 ## Что реализовано по-настоящему, а что упрощено
 
@@ -29,6 +29,8 @@ MINI_APP_URL=http://localhost:3000/mini-app
 
 SESSION_SECRET=long-random-string
 
+TELEGRAM_WEBHOOK_SECRET=random-telegram-webhook-secret
+
 PAYMENTS_MODE=mock
 
 OPENROUTER_API=openrouter-api-key
@@ -40,10 +42,24 @@ OPENROUTER_API=openrouter-api-key
 
 При разработке только через браузер можно просматривать интерфейс, но запускать проект нельзя: настоящий `initData` передаётся только самим Telegram.
 
+## Операционная безопасность
+
+`TELEGRAM_WEBHOOK_SECRET` обязателен в production: `npm run telegram:setup` передаёт его Telegram, а endpoint webhook проверяет заголовок `X-Telegram-Bot-Api-Secret-Token`. Не публикуйте это значение и не передавайте его через URL.
+
+Схема SQLite обновляется отдельным идемпотентным шагом `npm run db:migrate`; web и worker не стартуют при неприменённых миграциях. До каждой production-миграции deploy создаёт SQLite backup и проверяет его целостность. Ручные операции:
+
+```bash
+npm run db:backup -- /srv/aibot/backups/manual-$(date -u +%Y%m%dT%H%M%SZ).sqlite
+npm run db:verify-backup -- /srv/aibot/backups/manual-YYYYMMDDTHHMMSSZ.sqlite
+npm run db:restore -- /srv/aibot/backups/manual-YYYYMMDDTHHMMSSZ.sqlite /srv/aibot/restore-check.sqlite
+```
+
+Проверка восстановления должна выполняться в новый путь: команда восстановления намеренно не перезаписывает рабочую БД. Резервные копии нужно забирать за пределы сервера и регулярно проверять восстановлением; автоматическое off-host хранение не реализовано в приложении.
+
 ## Структура на Hetzner
 
 ```text
-/srv/aibot/current       развёрнутое приложение
+/srv/aibot/current       симлинк на активный release в /srv/aibot/releases
 
 /srv/aibot/.env          production-секреты, права доступа 600
 
@@ -56,7 +72,7 @@ OPENROUTER_API=openrouter-api-key
 
 ## Развёртывание в production
 
-1. Скопируйте приложение в `/srv/aibot/current`, выполните `npm ci`, затем `npm run build`.
+1. Первый release создаётся согласно `deploy/CI-CD.md`. Далее GitHub Actions передаёт в deploy точный SHA; скрипт собирает его в отдельной release-директории, делает backup, применяет миграции и атомарно переключает симлинк `current`. При провале readiness-проверки он возвращает предыдущий release без повторного `npm ci`.
 
 2. Создайте `/srv/aibot/.env` на основе `.env.example`, укажите секреты и настройте доступ так, чтобы файл мог читать только пользователь, выполняющий деплой. Создайте символьную ссылку на него как `/srv/aibot/current/.env.local`, чтобы Next.js получал те же значения. Worker читает `/srv/aibot/.env` через `AIBOT_ENV_PATH`.
 

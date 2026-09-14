@@ -17,7 +17,7 @@ function signedInitData(id: number, token = "verification-token") {
 
 describe("Telegram authorization route", () => {
   it("verifies initData and creates the signed session cookie", async () => {
-    const fixture = createTestDatabase(); remove = fixture.remove;
+    const fixture = createTestDatabase({ migrate: false }); remove = fixture.remove;
     createLegacyDatabase(fixture.filename);
     const valid = signedInitData(42).toString();
     expect(verifyTelegramInitData(valid)).toMatchObject({ id: "42", firstName: "Test", username: "user42" });
@@ -31,7 +31,7 @@ describe("Telegram authorization route", () => {
   });
 
   it("rejects a forged Telegram user payload", async () => {
-    const fixture = createTestDatabase(); remove = fixture.remove;
+    const fixture = createTestDatabase({ migrate: false }); remove = fixture.remove;
     createLegacyDatabase(fixture.filename);
     const forged = signedInitData(42);
     forged.set("user", JSON.stringify({ id: 99 }));
