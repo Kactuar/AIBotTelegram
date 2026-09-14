@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sessionCookie, sessionValue, verifyTelegramInitData, isAllowedUser } from "@/src/server/auth";
+import { sessionCookie, sessionValue, verifyTelegramInitData } from "@/src/server/auth";
 import { paymentState } from "@/src/server/payments";
 import { getBotLanguage, getOrCreateUser, saveProfileIdentity } from "@/src/server/users";
 
@@ -10,10 +10,10 @@ export async function POST(request: Request) {
     const { initData } = await request.json() as { initData?: string };
     if (!initData) return NextResponse.json({ error: "Telegram authorization is required" }, { status: 401 });
     const identity = verifyTelegramInitData(initData);
-    const user = getOrCreateUser(identity.id, isAllowedUser(identity.id));
+    const user = getOrCreateUser(identity.id);
     saveProfileIdentity(identity.id, identity.firstName, identity.username);
     const state = paymentState(identity.id);
-    const response = NextResponse.json({ user: { id: identity.id, firstName: identity.firstName, username: identity.username, language: getBotLanguage(identity.id), allowed: isAllowedUser(identity.id), balance: state.balance, trialAvailable: state.trialAvailable, trialProjectId: state.trialProjectId, trialUnlocked: state.trialUnlocked }, settings: user.settings });
+    const response = NextResponse.json({ user: { id: identity.id, firstName: identity.firstName, username: identity.username, language: getBotLanguage(identity.id), allowed: true, balance: state.balance, trialAvailable: state.trialAvailable, trialProjectId: state.trialProjectId, trialUnlocked: state.trialUnlocked }, settings: user.settings });
     response.cookies.set(sessionCookie(sessionValue(identity.id)));
     return response;
   } catch {

@@ -43,14 +43,14 @@ describe("SQLite migrations and transactional workflows", () => {
     updateProject(paidProject.id, { status: "uploaded", inputPath: "/tmp/input.mp4" });
     expect(reserveGeneration(paidProject.id, "45", "prompt")).toEqual({ ok: true, trial: false, cost: 23 });
     failProject(paidProject.id, "provider_failed");
-    expect(getUser("45").balance).toBe(240);
+    expect(getUser("45").balance).toBe(340);
     expect(hasActiveProject("45")).toBe(false);
 
     const referralPayment = createPaymentIntent("501", "referral-payment", "active", "ru_card", "referral-key");
     expect(completeMockPayment("501", referralPayment!.id, "paid")?.operation.status).toBe("paid");
-    expect(getUser("500").balance).toBe(59);
+    expect(getUser("500").balance).toBe(159);
     completeMockPayment("501", referralPayment!.id, "paid");
-    expect(getUser("500").balance).toBe(59);
+    expect(getUser("500").balance).toBe(159);
     expect(referralState("500").earnedTokens).toBe(59);
     expect(paymentOperations("501")).toHaveLength(1);
   });

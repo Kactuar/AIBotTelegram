@@ -13,7 +13,6 @@ export function appConfig() {
     sessionSecret: requiredEnv("SESSION_SECRET"),
     databasePath: process.env.DATABASE_PATH || path.join(process.cwd(), ".data", "app.sqlite"),
     storageRoot: process.env.STORAGE_ROOT || path.join(process.cwd(), ".data", "storage"),
-    allowedUserIds: new Set((process.env.TELEGRAM_ALLOWED_USER_IDS || "").split(",").map((id) => id.trim()).filter(Boolean)),
     openRouterApi: process.env.OPENROUTER_API?.trim(),
     paymentMode: process.env.PAYMENTS_MODE === "mock" ? "mock" : "disabled" as "mock" | "disabled",
     supportUrl: process.env.SUPPORT_URL?.trim(),

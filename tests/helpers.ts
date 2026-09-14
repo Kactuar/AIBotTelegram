@@ -8,7 +8,6 @@ export function createTestDatabase() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "aibot-test-"));
   const filename = path.join(root, "app.sqlite");
   process.env.DATABASE_PATH = filename;
-  process.env.TELEGRAM_ALLOWED_USER_IDS = "42";
   process.env.APP_URL = "http://verification.local";
   process.env.BOT_TOKEN = "verification-token";
   process.env.SESSION_SECRET = "verification-session-secret";

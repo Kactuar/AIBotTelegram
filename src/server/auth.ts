@@ -49,7 +49,6 @@ export async function requireUserId() {
 }
 
 export const sessionCookie = (value: string) => ({ name: SESSION_COOKIE, value, httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: 24 * 60 * 60 });
-export function isAllowedUser(telegramId: string) { return appConfig().allowedUserIds.has(telegramId); }
 export function downloadSignature(projectId: string, expires: string) { return sign(`${projectId}.${expires}`); }
 export function validDownloadSignature(projectId: string, expires: string, signature: string | null) {
   if (!signature || !/^\d+$/.test(expires) || Number(expires) < Date.now() / 1000) return false;
