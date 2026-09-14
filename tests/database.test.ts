@@ -12,15 +12,17 @@ afterEach(() => { remove?.(); remove = undefined; });
 
 describe("SQLite migrations and transactional workflows", () => {
   it("migrates the legacy user table and persists profile fields", () => {
-    const fixture = createTestDatabase(); remove = fixture.remove;
+    const fixture = createTestDatabase({ migrate: false }); remove = fixture.remove;
     createLegacyDatabase(fixture.filename);
     expect(getUser("42").balance).toBe(100);
+    createProject("legacy-project", "42", defaultMontageSettings);
     saveOpenRouterJob("legacy-project", { segmentIndex: 1, attempt: 1, jobId: "job-1", nextActionAt: new Date().toISOString() });
     expect(openRouterJob("legacy-project")).toMatchObject({ segmentIndex: 1, jobId: "job-1" });
     clearOpenRouterJob("legacy-project");
     expect(openRouterJob("legacy-project")).toBeUndefined();
     saveProfileIdentity("42", "Profile", "profile_user");
     expect(profileIdentity("42")).toEqual({ firstName: "Profile", username: "profile_user" });
+    expect(() => saveOpenRouterJob("missing-project", { segmentIndex: 1, attempt: 1, jobId: "job-1", nextActionAt: new Date().toISOString() })).toThrow(/FOREIGN KEY/);
   });
 
   it("keeps trial, paid-token refund and referral rewards idempotent", () => {

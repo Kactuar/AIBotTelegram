@@ -22,6 +22,7 @@ export function claimReferralAttribution(invitedUserId: string, code: string | u
   if (!code || !/^[A-Za-z0-9_-]{8}$/.test(code)) return false;
   const referral = db().prepare("SELECT user_id FROM referral_codes WHERE code = ?").get(code) as { user_id: string } | undefined;
   if (!referral || referral.user_id === invitedUserId) return false;
+  getUser(invitedUserId);
   return Boolean(db().prepare("INSERT OR IGNORE INTO referral_attributions (invited_user_id, inviter_user_id, created_at) VALUES (?, ?, ?)").run(invitedUserId, referral.user_id, now()).changes);
 }
 export function referralState(userId: string): ReferralState {
