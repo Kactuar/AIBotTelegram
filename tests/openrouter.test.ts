@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { downloadOpenRouterOutput, openRouterTask, OpenRouterError, startOpenRouterEdit } from "@/src/server/openrouter";
+import { downloadOpenRouterOutput, MAX_OPENROUTER_OUTPUT_BYTES, openRouterTask, OpenRouterError, startOpenRouterEdit } from "@/src/server/openrouter";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -31,7 +31,10 @@ describe("OpenRouter video adapter", () => {
     expect(await fs.readFile(target, "utf8")).toBe("video-bytes");
     const submit = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(submit).toMatchObject({ model: "black-forest-labs/flux-video-edit", prompt: "edit prompt", input_references: [{ type: "video_url", video_url: { url: "https://verification.local/source?signature=x" } }] });
-    for (const call of fetchMock.mock.calls) expect((call[1]?.headers as Record<string, string>).Authorization).toBe("Bearer test-openrouter-key");
+    for (const call of fetchMock.mock.calls) {
+      expect((call[1]?.headers as Record<string, string>).Authorization).toBe("Bearer test-openrouter-key");
+      expect(call[1]?.signal).toBeInstanceOf(AbortSignal);
+    }
     await fs.rm(root, { recursive: true, force: true });
   });
 
@@ -45,5 +48,14 @@ describe("OpenRouter video adapter", () => {
     delete process.env.OPENROUTER_API;
     await expect(startOpenRouterEdit("https://verification.local/source", "prompt")).rejects.toMatchObject({ retryable: false, message: "openrouter_not_configured" });
     expect(new OpenRouterError("x", true)).toBeInstanceOf(Error);
+  });
+
+  it("rejects an output declared above the disk safety limit", async () => {
+    process.env.OPENROUTER_API = "test-openrouter-key";
+    process.env.APP_URL = "http://verification.local";
+    process.env.BOT_TOKEN = "test-bot-token";
+    process.env.SESSION_SECRET = "test-session-secret";
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("small", { status: 200, headers: { "Content-Length": String(MAX_OPENROUTER_OUTPUT_BYTES + 1) } }));
+    await expect(downloadOpenRouterOutput("job-1", path.join(os.tmpdir(), "output.mp4"))).rejects.toMatchObject({ message: "openrouter_output_too_large", retryable: false });
   });
 });

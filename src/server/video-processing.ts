@@ -9,6 +9,8 @@ const executable = process.env.FFMPEG_PATH || ffmpegPath;
 const MAX_DURATION_SECONDS = 30;
 const MAX_SEGMENT_SECONDS = 15;
 const MAX_SEGMENT_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_PIXELS = 4096 * 4096;
+const FFMPEG_TIMEOUT_MS = 2 * 60 * 1000;
 
 type VideoInfo = { duration: number; width: number; height: number };
 
@@ -21,9 +23,20 @@ async function run(args: string[], code: string) {
   return await new Promise<string>((resolve, reject) => {
     const child = spawn(ffmpeg(), ["-hide_banner", ...args], { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGTERM");
+      setTimeout(() => child.kill("SIGKILL"), 5 * 1000).unref();
+    }, FFMPEG_TIMEOUT_MS);
     child.stderr?.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
-    child.on("error", reject);
-    child.on("close", (exitCode) => exitCode === 0 ? resolve(stderr) : reject(new Error(`${code}: ${stderr.trim().slice(-1200)}`)));
+    child.on("error", (error) => { clearTimeout(timer); reject(error); });
+    child.on("close", (exitCode) => {
+      clearTimeout(timer);
+      if (timedOut) reject(new Error(`${code}_timed_out`));
+      else if (exitCode === 0) resolve(stderr);
+      else reject(new Error(`${code}: ${stderr.trim().slice(-1200)}`));
+    });
   });
 }
 
@@ -42,7 +55,7 @@ function parseInfo(stderr: string): VideoInfo {
 export async function inspectVideo(input: string, validateSource = true) {
   const stderr = await run(["-i", input, "-map", "0:v:0", "-frames:v", "1", "-f", "null", "-"], "video_probe_failed");
   const info = parseInfo(stderr);
-  if (validateSource && (info.duration < 2 || info.duration > MAX_DURATION_SECONDS + 0.05)) throw new Error("invalid_video_dimensions_or_duration");
+  if (info.width * info.height > MAX_VIDEO_PIXELS || (validateSource && (info.duration < 2 || info.duration > MAX_DURATION_SECONDS + 0.05))) throw new Error("invalid_video_dimensions_or_duration");
   return info;
 }
 

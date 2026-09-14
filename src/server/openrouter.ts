@@ -1,12 +1,15 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { Readable } from "node:stream";
+import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { appConfig } from "@/src/server/config";
 
 const API_ROOT = "https://openrouter.ai/api/v1";
 export const OPENROUTER_MODEL = "black-forest-labs/flux-video-edit";
+export const OPENROUTER_REQUEST_TIMEOUT_MS = 30 * 1000;
+export const OPENROUTER_DOWNLOAD_TIMEOUT_MS = 2 * 60 * 1000;
+export const MAX_OPENROUTER_OUTPUT_BYTES = 100 * 1024 * 1024;
 
 export type OpenRouterVideoTask = {
   id: string;
@@ -37,12 +40,13 @@ function retryAfterMs(response: Response) {
   return Number.isNaN(timestamp) ? undefined : Math.max(0, timestamp - Date.now());
 }
 
-async function request(pathname: string, init: RequestInit = {}) {
+async function request(pathname: string, init: RequestInit = {}, timeoutMs = OPENROUTER_REQUEST_TIMEOUT_MS) {
   const key = apiKey();
   let response: Response;
   try {
     response = await fetch(`${API_ROOT}${pathname}`, {
       ...init,
+      signal: AbortSignal.timeout(timeoutMs),
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...init.headers },
     });
   } catch (error) {
@@ -78,12 +82,19 @@ export async function openRouterTask(jobId: string) {
 }
 
 export async function downloadOpenRouterOutput(jobId: string, target: string) {
-  const response = await request(`/videos/${encodeURIComponent(jobId)}/content?index=0`, { method: "GET" });
+  const response = await request(`/videos/${encodeURIComponent(jobId)}/content?index=0`, { method: "GET" }, OPENROUTER_DOWNLOAD_TIMEOUT_MS);
   if (!response.body) throw new OpenRouterError("openrouter_empty_output", true);
+  const declaredSize = Number(response.headers.get("content-length") || 0);
+  if (declaredSize > MAX_OPENROUTER_OUTPUT_BYTES) throw new OpenRouterError("openrouter_output_too_large", false);
   await fsp.mkdir(path.dirname(target), { recursive: true });
   const temporary = `${target}.part`;
+  let size = 0;
+  const limiter = new Transform({ transform(chunk, _encoding, callback) {
+    size += chunk.length;
+    callback(size > MAX_OPENROUTER_OUTPUT_BYTES ? new OpenRouterError("openrouter_output_too_large", false) : null, chunk);
+  } });
   try {
-    await pipeline(Readable.fromWeb(response.body as never), fs.createWriteStream(temporary));
+    await pipeline(Readable.fromWeb(response.body as never), limiter, fs.createWriteStream(temporary));
     await fsp.rename(temporary, target);
   } catch (error) {
     await fsp.rm(temporary, { force: true });

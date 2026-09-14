@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import { Api } from "grammy";
 import { appConfig } from "@/src/server/config";
 import { db } from "@/src/server/database";
-import { claimQueuedProject, clearOpenRouterJob, expiredResults, failProject, finishProject, openRouterJob, projectById, saveOpenRouterJob, updateProject } from "@/src/server/projects";
+import { claimQueuedProject, clearOpenRouterJob, expiredResults, failProject, finishProject, openRouterJob, projectById, saveOpenRouterJob, staleProjects, updateProject } from "@/src/server/projects";
 import { getBotLanguage } from "@/src/server/users";
 import { translations } from "@/src/bot/i18n";
 import { downloadSignature, sourceSignature } from "@/src/server/auth";
@@ -12,12 +12,15 @@ import { downloadOpenRouterOutput, openRouterTask, OpenRouterError, startOpenRou
 import { editedSegmentPath, preparedSegmentPath, removeFile, resultPath, watermarkedResultPath } from "@/src/server/storage";
 import { createWatermark } from "@/src/server/watermark";
 import { composePrompt } from "@/src/domain/montage";
-import { concatVideoSegments, prepareVideoSegments, removeVideoIntermediates } from "@/src/server/video-processing";
+import { concatVideoSegments, inspectVideo, prepareVideoSegments, removeVideoIntermediates } from "@/src/server/video-processing";
+import { touchWorkerHeartbeat } from "@/src/server/health";
 
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const POLL_INTERVAL_MS = 30 * 1000;
 const RETRY_DELAY_MS = 30 * 1000;
 const MAX_ATTEMPTS = 2;
+const PROVIDER_JOB_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+const RUNNING_PROJECT_CONCURRENCY = 2;
 let lastCleanup = 0;
 
 async function notifyCompleted(projectId: string) {
@@ -67,8 +70,9 @@ async function cleanupFailedProject(projectId: string, userId: string, inputPath
 async function failAndCleanup(projectId: string, code: string) {
   const project = projectById(projectId);
   if (!project) return;
-  await cleanupFailedProject(project.id, project.userId, project.inputPath);
-  failProject(project.id, code);
+  if (!failProject(project.id, code)) return;
+  try { await cleanupFailedProject(project.id, project.userId, project.inputPath); }
+  catch (cleanupError) { console.error("Unable to clean failed OpenRouter project", cleanupError); }
 }
 
 async function submitSegment(project: NonNullable<ReturnType<typeof projectById>>, segment: 1 | 2, count: 1 | 2, attempt: number) {
@@ -99,6 +103,7 @@ async function prepareAndSubmit(project: NonNullable<ReturnType<typeof projectBy
 }
 
 export async function advanceProject(project: NonNullable<ReturnType<typeof projectById>>) {
+  if (Date.now() - Date.parse(project.updatedAt) > PROVIDER_JOB_TIMEOUT_MS) throw new Error("provider_job_timed_out");
   const job = openRouterJob(project.id);
   if (!job) {
     await prepareAndSubmit(project);
@@ -129,6 +134,7 @@ export async function advanceProject(project: NonNullable<ReturnType<typeof proj
     }
     const output = editedSegmentPath(project.userId, project.id, segment);
     await downloadOpenRouterOutput(job.jobId, output);
+    await inspectVideo(output, false);
     const hasSecond = await exists(preparedSegmentPath(project.userId, project.id, 2));
     if (segment === 1 && hasSecond) {
       await submitSegmentWithRetry(project, 2, 2, 1);
@@ -168,11 +174,13 @@ async function processProject() {
 
 async function processRunningProjects() {
   const rows = db().prepare("SELECT id FROM projects WHERE status = 'processing'").all() as { id: string }[];
-  for (const row of rows) {
-    const project = projectById(row.id);
-    if (!project) continue;
-    try { await advanceProject(project); }
-    catch (error) { console.error("Unable to update OpenRouter task", error); await failAndCleanup(project.id, failureCode(error)); }
+  for (let index = 0; index < rows.length; index += RUNNING_PROJECT_CONCURRENCY) {
+    await Promise.all(rows.slice(index, index + RUNNING_PROJECT_CONCURRENCY).map(async ({ id }) => {
+      const project = projectById(id);
+      if (!project) return;
+      try { await advanceProject(project); }
+      catch (error) { console.error("Unable to update OpenRouter task", error); await failAndCleanup(project.id, failureCode(error)); }
+    }));
   }
 }
 
@@ -184,12 +192,14 @@ async function cleanup() {
     await removeFile(project.watermarkedResultPath);
     updateProject(project.id, { resultPath: null, watermarkedResultPath: null });
   }
+  for (const project of staleProjects()) await failAndCleanup(project.id, "project_timed_out");
 }
 
 async function run() {
   db();
   console.info("aibot worker started");
   while (true) {
+    touchWorkerHeartbeat();
     await cleanup();
     await processRunningProjects();
     await processProject();

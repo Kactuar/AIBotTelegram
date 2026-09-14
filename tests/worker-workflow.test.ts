@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultMontageSettings } from "@/src/domain/montage";
 import { openRouterJob, saveOpenRouterJob, createProject, updateProject } from "@/src/server/projects";
 import { editedSegmentPath, preparedSegmentPath } from "@/src/server/storage";
+vi.mock("@/src/server/video-processing", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/src/server/video-processing")>()), inspectVideo: vi.fn().mockResolvedValue({ duration: 15, width: 720, height: 720 }) }));
 import { advanceProject } from "@/src/worker";
 import { createTestDatabase } from "./helpers";
 
