@@ -36,7 +36,7 @@ sudo cat /etc/ssh/ssh_host_ed25519_key.pub
 
 ## One-time server bootstrap
 
-Clone and build a candidate before replacing the live directory. `/srv/aibot/.env`, SQLite and video storage stay outside the checkout.
+Clone and build a candidate before replacing the live directory. `/srv/aibot/.env`, SQLite and video storage stay outside the checkout. This creates the release-directory layout expected by the deploy script.
 
 ```bash
 cd /srv/aibot
@@ -51,8 +51,8 @@ npm run verify
 npm run build
 ```
 
-After these checks pass, rename the old `current` directory to `current.before-cicd`, rename `current-candidate` to `current`, and restart only `aibot-web` and `aibot-worker`. Keep the old directory until the health check succeeds.
+After these checks pass, move `current-candidate` to `/srv/aibot/releases/<commit-sha>` and make `/srv/aibot/current` a symlink to that directory. Restart only `aibot-web` and `aibot-worker`, then check `http://127.0.0.1:3010/api/health/ready`. Keep the previous release directory intact.
 
 ## Normal deployment
 
-After bootstrap, add the GitHub Actions repository variable `AIBOT_DEPLOY_ENABLED=true`. A push to `master` then locks deployments, builds before restart, checks `http://127.0.0.1:3010/mini-app`, and rolls back to the previous Git commit on failure.
+After bootstrap, add the GitHub Actions repository variable `AIBOT_DEPLOY_ENABLED=true`. A push to `master` then locks deployments, creates and verifies a backup, builds in a new release directory, runs the migration, switches `current` atomically, checks `http://127.0.0.1:3010/api/health/ready`, and rolls back by returning the symlink to the prior release on failure.
