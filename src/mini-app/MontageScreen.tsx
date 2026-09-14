@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { defaultMontageSettings, type MontageColor, type MontageSettings, type ProjectRecord } from "@/src/domain/montage";
+import { defaultMontageSettings, montageColors, type MontageSettings, type ProjectRecord } from "@/src/domain/montage";
 import type { ProjectResponse } from "@/src/domain/api";
 import { MAX_VIDEO_UPLOAD_BYTES, videoUploadDetails, type VideoContentType } from "@/src/domain/video-upload";
 import { Icon } from "./AppShell";
@@ -11,7 +11,6 @@ import { copy, type MiniAppLanguage } from "./i18n";
 import { telegramWebApp } from "./telegram";
 import styles from "@/app/mini-app/page.module.css";
 
-const colors: MontageColor[] = ["amber", "azure", "lime", "crimson"];
 type SelectedVideo = { file: File; contentType: VideoContentType; traceId: string };
 type VideoUploadEvent = "picker_opened" | "file_selected" | "file_rejected" | "metadata_loaded" | "preview_ready" | "metadata_error" | "upload_started";
 
@@ -41,14 +40,40 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   const [requirementsOpen, setRequirementsOpen] = useState(false);
   const [helpOption, setHelpOption] = useState<ReturnType<typeof getToggles>[number]>();
   const fileInput = useRef<HTMLInputElement>(null);
+  const colorScroller = useRef<HTMLDivElement>(null);
   const selection = useRef(0);
   const traceId = useRef("");
+  const [canScrollColorsLeft, setCanScrollColorsLeft] = useState(false);
+  const [canScrollColorsRight, setCanScrollColorsRight] = useState(false);
   const t = copy[language];
   const options = getToggles(language);
   const overlayOpen = introOpen || requirementsOpen || Boolean(helpOption);
   const closeOverlay = useCallback(() => { setIntroOpen(false); setRequirementsOpen(false); setHelpOption(undefined); }, []);
 
   useEffect(() => { setSettings(initialSettings); }, [initialSettings]);
+  const updateColorNavigation = useCallback(() => {
+    const scroller = colorScroller.current;
+    if (!scroller) return;
+    const maximum = scroller.scrollWidth - scroller.clientWidth;
+    setCanScrollColorsLeft(scroller.scrollLeft > 1);
+    setCanScrollColorsRight(scroller.scrollLeft < maximum - 1);
+  }, []);
+  useEffect(() => {
+    const scroller = colorScroller.current;
+    if (!scroller) return;
+    const update = () => updateColorNavigation();
+    update();
+    scroller.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { scroller.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [updateColorNavigation]);
+  useEffect(() => {
+    const scroller = colorScroller.current;
+    const selected = scroller?.querySelector<HTMLButtonElement>(`button[data-color="${settings.color}"]`);
+    if (!scroller || !selected) return;
+    scroller.scrollTo({ left: Math.max(0, selected.offsetLeft - (scroller.clientWidth - selected.offsetWidth) / 2) });
+    window.requestAnimationFrame(updateColorNavigation);
+  }, [settings.color, updateColorNavigation]);
   useEffect(() => {
     if (!localStorage.getItem("aibot_intro_seen")) { setIntroOpen(true); localStorage.setItem("aibot_intro_seen", "1"); }
     const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape") closeOverlay(); };
@@ -77,6 +102,10 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   function save(next: MontageSettings) {
     setSettings(next);
     if (authorized) void fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
+  }
+  function scrollColors(direction: -1 | 1) {
+    const scroller = colorScroller.current;
+    if (scroller) scroller.scrollBy({ left: direction * scroller.clientWidth * 0.75 });
   }
   function createTrace() {
     const id = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -157,7 +186,11 @@ export default function MontageScreen({ authorized, authPending, authError, bala
     {header}
     <section className={styles.preview} data-color={settings.color}>{preview ? <video src={preview} controls playsInline /> : <div className={styles.demo}><span>{language === "ru" ? "Это пример" : "Subtitle"}</span><b>{language === "ru" ? "субтитров" : "preview"}</b><em>{language === "ru" ? "в стиле Glass" : "in Glass style"}</em></div>}<button className={styles.play} onClick={() => setIntroOpen(true)} aria-label={t.common.close}><Icon name="play" /></button></section>
     <div className={styles.styles}><button className={styles.activeStyle}>Glass</button><button disabled>Poster <small>{t.montage.stylesSoon}</small></button><button disabled>Editorial <small>{t.montage.stylesSoon}</small></button></div>
-    <div className={styles.colors}>{colors.map((color, index) => <button key={color} className={settings.color === color ? styles.colorActive : ""} onClick={() => save({ ...settings, color })}><i data-color={color} />{t.montage.colors[index]}</button>)}</div>
+    <div className={styles.colorCarousel}>
+      {canScrollColorsLeft && <button type="button" className={`${styles.colorArrow} ${styles.colorArrowLeft}`} aria-label={t.montage.previousColors} onClick={() => scrollColors(-1)}><span aria-hidden="true">‹</span></button>}
+      <div className={styles.colors} ref={colorScroller}>{montageColors.map((color, index) => <button type="button" key={color} data-color={color} aria-pressed={settings.color === color} className={settings.color === color ? styles.colorActive : ""} onClick={() => save({ ...settings, color })}><i data-color={color} />{t.montage.colors[index]}</button>)}</div>
+      {canScrollColorsRight && <button type="button" className={`${styles.colorArrow} ${styles.colorArrowRight}`} aria-label={t.montage.nextColors} onClick={() => scrollColors(1)}><span aria-hidden="true">›</span></button>}
+    </div>
     <div className={styles.sectionTitle}><strong>{t.montage.video}</strong><button type="button" className={styles.requirementsLink} onClick={() => setRequirementsOpen(true)}><Icon name="help" /> {t.montage.requirements}</button></div>
     <label className={styles.upload} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const id = createTrace(); selectFile(event.dataTransfer.files[0], id); }}><input ref={fileInput} type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" onClick={() => { const id = createTrace(); logUpload("picker_opened", {}, id); }} onChange={(event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; selectFile(file); }} /><Icon name="upload" /><div><b>{selectedVideo ? selectedVideo.file.name : t.montage.upload}</b><span>{uploading ? `${language === "ru" ? "Загрузка" : "Uploading"} ${uploading}%` : t.montage.uploadHint}</span></div></label>
     {message && <p className={styles.status} role="status">{message}</p>}

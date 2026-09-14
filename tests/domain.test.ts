@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composePrompt, defaultMontageSettings } from "@/src/domain/montage";
+import { composePrompt, defaultMontageSettings, montageColors } from "@/src/domain/montage";
 import { paymentPackages, priceFor } from "@/src/domain/payments";
 import { tariffs, mockVideos } from "@/src/bot/mock/data";
 import { tariffsKeyboard } from "@/src/bot/keyboards/balance";
@@ -20,6 +20,21 @@ describe("pure domain and bot helpers", () => {
     expect(prompt).not.toContain("emoji");
     expect(paymentPackages.map((item) => item.stars)).toEqual([1118, 2618, 4868]);
     expect(priceFor(paymentPackages[1], "foreign_card_2").label).toBe("$43.00");
+  });
+
+  it("keeps the complete montage palette ordered and described in prompts", () => {
+    expect(montageColors).toEqual(["amber", "azure", "lime", "crimson", "pearl", "turquoise", "violet", "neon-pink", "white", "orange"]);
+    const descriptions = {
+      pearl: "soft pearl and champagne",
+      turquoise: "vivid turquoise",
+      violet: "rich violet",
+      "neon-pink": "vivid neon pink",
+      white: "clean white with sufficient contrast",
+      orange: "energetic orange",
+    } as const;
+    for (const [color, description] of Object.entries(descriptions)) {
+      expect(composePrompt({ ...defaultMontageSettings, color: color as keyof typeof descriptions })).toContain(description);
+    }
   });
 
   it("adds enabled editing instructions and only hooks the first segment", () => {

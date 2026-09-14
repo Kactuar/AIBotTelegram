@@ -1,4 +1,5 @@
-export type MontageColor = "amber" | "azure" | "lime" | "crimson";
+export const montageColors = ["amber", "azure", "lime", "crimson", "pearl", "turquoise", "violet", "neon-pink", "white", "orange"] as const;
+export type MontageColor = (typeof montageColors)[number];
 
 export interface MontageSettings {
   style: "glass";
@@ -55,6 +56,12 @@ const palette: Record<MontageSettings["color"], string> = {
   azure: "Accent color: clean azure-blue.",
   lime: "Accent color: fresh lime-green.",
   crimson: "Accent color: deep crimson-red.",
+  pearl: "Accent color: soft pearl and champagne.",
+  turquoise: "Accent color: vivid turquoise.",
+  violet: "Accent color: rich violet.",
+  "neon-pink": "Accent color: vivid neon pink.",
+  white: "Accent color: clean white with sufficient contrast.",
+  orange: "Accent color: energetic orange.",
 };
 
 export function composePrompt(settings: MontageSettings, context: MontagePromptContext = {}): string {

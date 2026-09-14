@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { AvailableProject, ProjectsResponse } from "@/src/domain/api";
 import { Icon } from "./AppShell";
+import { montageColors } from "@/src/domain/montage";
 import { copy, type MiniAppLanguage } from "./i18n";
 import styles from "@/app/mini-app/page.module.css";
 
@@ -46,7 +47,7 @@ export default function VideosScreen({ authorized, authPending, header, language
       {state.kind === "ready" && <div className={styles.videoList}>{state.projects.map((project) => <article className={styles.videoCard} key={project.id}>
         <div className={styles.videoThumb}><Icon name="films" /></div>
         <div className={styles.videoDetails}>
-          <strong>Glass · {copy[language].montage.colors[["amber", "azure", "lime", "crimson"].indexOf(project.settings.color)]}</strong>
+          <strong>Glass · {copy[language].montage.colors[montageColors.indexOf(project.settings.color)]}</strong>
           <span>{displayDate(project.createdAt, language)} · {project.isTrial && !project.trialUnlockedAt ? t.trial : t.ready} · {t.expires(displayDate(project.resultExpiresAt!, language))}</span>
           <a href={project.downloadUrl} target="_blank" rel="noreferrer">{t.download}</a>
         </div>
