@@ -5,6 +5,8 @@ on:
     branches: [master]
   push:
     branches: [master]
+  schedule:
+    - cron: "17 4 * * 1"
 
 concurrency:
   group: aibot-production
@@ -23,6 +25,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm audit --audit-level=high
       - run: npm run verify
       # Next imports the webhook route while collecting route metadata. The bot
       # is constructed during that import, so CI needs a syntactically valid
@@ -31,6 +34,7 @@ jobs:
       - run: npm run build
         env:
           BOT_TOKEN: ci-build-placeholder
+          TELEGRAM_WEBHOOK_SECRET: ci-build-placeholder
 
   deploy:
     name: Deploy verified commit

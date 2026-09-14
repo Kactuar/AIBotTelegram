@@ -6,6 +6,18 @@ export function requiredEnv(name: string): string {
   return value;
 }
 
+const TELEGRAM_WEBHOOK_SECRET = /^[A-Za-z0-9_-]{1,256}$/;
+
+export function telegramWebhookSecret() {
+  const value = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  if (!value) {
+    if (process.env.NODE_ENV === "production") throw new Error("TELEGRAM_WEBHOOK_SECRET is not configured");
+    return undefined;
+  }
+  if (!TELEGRAM_WEBHOOK_SECRET.test(value)) throw new Error("TELEGRAM_WEBHOOK_SECRET has an invalid format");
+  return value;
+}
+
 export function appConfig() {
   return {
     appUrl: requiredEnv("APP_URL").replace(/\/$/, ""),

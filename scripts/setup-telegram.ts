@@ -1,14 +1,15 @@
 import dotenv from "dotenv";
 import { Api } from "grammy";
+import { telegramWebhookSecret } from "@/src/server/config";
 dotenv.config({ path: ".env.local" });
 
 async function main() {
-  const required = ["BOT_TOKEN", "APP_URL", "MINI_APP_URL"] as const;
+  const required = ["BOT_TOKEN", "APP_URL", "MINI_APP_URL", "TELEGRAM_WEBHOOK_SECRET"] as const;
   for (const name of required) if (!process.env[name]) throw new Error(`${name} is not defined`);
 
   const appUrl = process.env.APP_URL!.replace(/\/$/, "");
   const api = new Api(process.env.BOT_TOKEN!);
-  await api.setWebhook(`${appUrl}/api/telegram`);
+  await api.setWebhook(`${appUrl}/api/telegram`, { secret_token: telegramWebhookSecret()! });
   await api.setChatMenuButton({ menu_button: { type: "web_app", text: "Приложение ✨", web_app: { url: process.env.MINI_APP_URL! } } });
 
   const [webhook, menuButton] = await Promise.all([api.getWebhookInfo(), api.getChatMenuButton()]);
