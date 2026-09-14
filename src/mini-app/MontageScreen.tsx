@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { defaultMontageSettings, montageColors, type MontageSettings, type ProjectRecord } from "@/src/domain/montage";
-import type { ProjectResponse } from "@/src/domain/api";
+import { defaultMontageSettings, montageColors, type MontageSettings } from "@/src/domain/montage";
+import type { ProjectResponse, ProjectsResponse, PublicProject } from "@/src/domain/api";
 import { MAX_VIDEO_UPLOAD_BYTES, videoUploadDetails, type VideoContentType } from "@/src/domain/video-upload";
 import { Icon } from "./AppShell";
 import OptionHelp, { getToggles } from "./OptionHelp";
@@ -33,7 +33,7 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   const [settings, setSettings] = useState(initialSettings || defaultMontageSettings);
   const [preview, setPreview] = useState<string>();
   const [selectedVideo, setSelectedVideo] = useState<SelectedVideo>();
-  const [project, setProject] = useState<ProjectRecord>();
+  const [project, setProject] = useState<PublicProject>();
   const [uploading, setUploading] = useState(0);
   const [message, setMessage] = useState("");
   const [introOpen, setIntroOpen] = useState(false);
@@ -84,6 +84,17 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   }, [closeOverlay]);
   useEffect(() => { const button = telegramWebApp()?.BackButton; if (overlayOpen) button?.show(); else button?.hide(); }, [overlayOpen]);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  useEffect(() => {
+    if (!authorized || authPending || project) return;
+    const controller = new AbortController();
+    void fetch("/api/projects", { signal: controller.signal }).then(async (response) => {
+      if (!response.ok) return undefined;
+      return response.json() as Promise<ProjectsResponse>;
+    }).then((data) => {
+      if (!controller.signal.aborted && data?.activeProject) setProject(data.activeProject);
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, [authorized, authPending, project]);
   const projectId = project?.id;
   const projectStatus = project?.status;
   useEffect(() => {
@@ -150,8 +161,19 @@ export default function MontageScreen({ authorized, authPending, authError, bala
     video.src = url;
     video.load();
   }
+  async function queueProject(id: string) {
+    const queued = await fetch(`/api/projects/${id}/generate`, { method: "POST" });
+    const queuedData = await queued.json() as { error?: string; cost?: number; trial?: boolean };
+    if (!queued.ok) { setMessage(queuedData.error || t.montage.queueFailed); return; }
+    setProject((current) => current?.id === id ? { ...current, status: "queued", errorCode: null } : current);
+    if (queuedData.cost) onBalanceChange((value) => value - queuedData.cost!);
+    if (queuedData.trial) onTrialAvailableChange(false);
+    setMessage(queuedData.trial ? t.montage.trialQueued : t.montage.queued);
+  }
+
   async function uploadAndGenerate() {
     if (!authorized) return;
+    if (project?.status === "uploaded") { await queueProject(project.id); return; }
     if (!selectedVideo) { setMessage(t.montage.chooseVideo); return; }
     const { file, contentType, traceId: uploadTraceId } = selectedVideo;
     setMessage(""); logUpload("upload_started", { contentType, size: file.size }, uploadTraceId);
@@ -165,19 +187,18 @@ export default function MontageScreen({ authorized, authPending, authError, bala
       xhr.setRequestHeader("Content-Type", contentType);
       xhr.setRequestHeader("X-Upload-Trace-Id", uploadTraceId);
       xhr.upload.onprogress = (event) => { if (event.lengthComputable) setUploading(Math.round(event.loaded / event.total * 100)); };
-      xhr.onload = () => { const data = JSON.parse(xhr.responseText || "{}") as { error?: string }; if (!(xhr.status >= 200 && xhr.status < 300)) setMessage(data.error || t.montage.uploadFailed); resolve(xhr.status >= 200 && xhr.status < 300); };
+      xhr.onload = () => {
+        let data: { error?: string } = {};
+        try { data = JSON.parse(xhr.responseText || "{}") as { error?: string }; } catch { /* A proxy may return a non-JSON error page. */ }
+        if (!(xhr.status >= 200 && xhr.status < 300)) setMessage(data.error || t.montage.uploadFailed);
+        resolve(xhr.status >= 200 && xhr.status < 300);
+      };
       xhr.onerror = () => { setMessage(t.montage.uploadFailed); resolve(false); };
       xhr.send(file);
     });
     if (!uploaded) { setUploading(0); return; }
-    const queued = await fetch(`/api/projects/${createdData.project.id}/generate`, { method: "POST" });
-    const queuedData = await queued.json() as { error?: string; cost?: number; trial?: boolean };
     setUploading(0);
-    if (!queued.ok) { setMessage(queuedData.error || t.montage.queueFailed); return; }
-    setProject((current) => current ? { ...current, status: "queued" } : current);
-    if (queuedData.cost) onBalanceChange((value) => value - queuedData.cost!);
-    if (queuedData.trial) onTrialAvailableChange(false);
-    setMessage(queuedData.trial ? t.montage.trialQueued : t.montage.queued);
+    await queueProject(createdData.project.id);
   }
 
   const needsTopUp = authorized && balance < 23 && !trialAvailable;

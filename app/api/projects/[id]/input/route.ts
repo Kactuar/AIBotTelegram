@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/src/server/auth";
-import { projectById, updateProject } from "@/src/server/projects";
-import { canAcceptUpload, extensionFor, inputPath, writeUpload } from "@/src/server/storage";
+import { failProject, projectById, startProjectUpload, completeProjectUpload } from "@/src/server/projects";
+import { canAcceptUpload, extensionFor, inputPath, removeFile, writeUpload } from "@/src/server/storage";
 import { MAX_VIDEO_UPLOAD_BYTES } from "@/src/domain/video-upload";
+import { internalServerError, unauthorizedResponse } from "@/src/server/http";
 
 export const runtime = "nodejs";
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   const traceId = request.headers.get("x-upload-trace-id") || undefined;
+  let userId: string;
+  try { userId = await requireUserId(); } catch { return unauthorizedResponse(); }
+  const { id } = await context.params;
+  let uploadStarted = false;
+  let fileWritten = false;
+  let target: string | undefined;
   try {
-    const [userId, { id }] = await Promise.all([requireUserId(), context.params]);
     const project = projectById(id);
     const contentType = request.headers.get("content-type");
     const declaredLength = Number(request.headers.get("content-length") || 0);
@@ -30,15 +36,22 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       console.error("[video-upload]", JSON.stringify({ event: "upload_rejected", traceId, userId, projectId: id, reason: !request.body ? "missing_body" : "storage_full" }));
       return NextResponse.json({ error: "Storage is temporarily full" }, { status: 507 });
     }
-    updateProject(id, { status: "uploading" });
-    const target = inputPath(userId, id, extension);
+    if (!startProjectUpload(id, userId)) return NextResponse.json({ error: "Project cannot accept a file" }, { status: 409 });
+    uploadStarted = true;
+    target = inputPath(userId, id, extension);
     const size = await writeUpload(request.body, target);
-    updateProject(id, { status: "uploaded", inputPath: target });
+    fileWritten = true;
+    if (!completeProjectUpload(id, userId, target)) throw new Error("upload_state_changed");
     console.info("[video-upload]", JSON.stringify({ event: "upload_saved", traceId, userId, projectId: id, extension, size }));
     return NextResponse.json({ size });
   } catch (error) {
-    const message = error instanceof Error && error.message === "file_too_large" ? "Maximum upload size is 100 MB" : "Upload failed";
+    if (uploadStarted) {
+      failProject(id, "upload_failed");
+      await removeFile(target || null).catch(() => undefined);
+    }
     console.error("[video-upload]", JSON.stringify({ event: "upload_failed", traceId, reason: error instanceof Error ? error.message : "unknown" }));
-    return NextResponse.json({ error: message }, { status: 400 });
+    if (error instanceof Error && error.message === "file_too_large") return NextResponse.json({ error: "Maximum upload size is 100 MB" }, { status: 413 });
+    if (uploadStarted && !fileWritten) return NextResponse.json({ error: "Upload failed" }, { status: 400 });
+    return internalServerError("PUT /api/projects/[id]/input", error);
   }
 }
