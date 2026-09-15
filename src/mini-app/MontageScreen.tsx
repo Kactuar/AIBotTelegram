@@ -32,7 +32,8 @@ type Props = {
 export default function MontageScreen({ authorized, authPending, authError, balance, initialSettings, language, trialAvailable, header, nav, onBalanceChange, onSelectBalance, onTrialAvailableChange }: Props) {
   const [settings, setSettings] = useState(initialSettings || defaultMontageSettings);
   const [captionColor, setCaptionColor] = useState(settings.color);
-  const [leavingCaptionColor, setLeavingCaptionColor] = useState<MontageColor>();
+  const [captionPhase, setCaptionPhase] = useState<"idle" | "leaving" | "entering">("idle");
+  const nextCaptionColor = useRef<MontageColor>(settings.color);
   const [preview, setPreview] = useState<string>();
   const [selectedVideo, setSelectedVideo] = useState<SelectedVideo>();
   const [project, setProject] = useState<PublicProject>();
@@ -52,14 +53,24 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   const overlayOpen = introOpen || requirementsOpen || Boolean(helpOption);
   const closeOverlay = useCallback(() => { setIntroOpen(false); setRequirementsOpen(false); setHelpOption(undefined); }, []);
 
-  useEffect(() => { setSettings(initialSettings); }, [initialSettings]);
   useEffect(() => {
-    if (settings.color === captionColor) return;
-    setLeavingCaptionColor(captionColor);
-    setCaptionColor(settings.color);
-    const timer = window.setTimeout(() => setLeavingCaptionColor(undefined), 320);
+    setSettings(initialSettings);
+    setCaptionColor(initialSettings.color);
+    setCaptionPhase("idle");
+    nextCaptionColor.current = initialSettings.color;
+  }, [initialSettings]);
+  useEffect(() => {
+    if (captionPhase === "idle") return;
+    const timer = window.setTimeout(() => {
+      if (captionPhase === "leaving") {
+        setCaptionColor(nextCaptionColor.current);
+        setCaptionPhase("entering");
+      } else {
+        setCaptionPhase(nextCaptionColor.current === captionColor ? "idle" : "leaving");
+      }
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 320);
     return () => window.clearTimeout(timer);
-  }, [captionColor, settings.color]);
+  }, [captionColor, captionPhase]);
   const updateColorNavigation = useCallback(() => {
     const scroller = colorScroller.current;
     if (!scroller) return;
@@ -122,6 +133,12 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   function save(next: MontageSettings) {
     setSettings(next);
     if (authorized) void fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
+  }
+  function selectColor(color: MontageColor) {
+    if (color === settings.color) return;
+    save({ ...settings, color });
+    nextCaptionColor.current = color;
+    setCaptionPhase((phase) => phase === "idle" ? "leaving" : phase);
   }
   function scrollColors(direction: -1 | 1) {
     const scroller = colorScroller.current;
@@ -214,11 +231,11 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   const busy = uploading > 0 || ["queued", "processing"].includes(project?.status || "");
   return <>
     {header}
-    <section className={styles.preview}>{preview ? <video src={preview} controls playsInline /> : <div className={styles.demo} />}<div className={styles.subtitles} aria-hidden="true">{leavingCaptionColor && <PreviewSubtitles color={leavingCaptionColor} leaving language={language} />}<PreviewSubtitles color={captionColor} language={language} /></div><button className={styles.play} onClick={() => setIntroOpen(true)} aria-label={t.common.close}><Icon name="play" /></button></section>
+    <section className={styles.preview}>{preview ? <video src={preview} controls playsInline /> : <div className={styles.demo} />}<div className={styles.subtitles} aria-hidden="true"><PreviewSubtitles color={captionColor} phase={captionPhase} language={language} /></div><button className={styles.play} onClick={() => setIntroOpen(true)} aria-label={t.common.close}><Icon name="play" /></button></section>
     <div className={styles.styles}><button className={styles.activeStyle}>Glass</button><button disabled>Poster <small>{t.montage.stylesSoon}</small></button><button disabled>Editorial <small>{t.montage.stylesSoon}</small></button></div>
     <div className={styles.colorCarousel}>
       {canScrollColorsLeft && <button type="button" className={`${styles.colorArrow} ${styles.colorArrowLeft}`} aria-label={t.montage.previousColors} onClick={() => scrollColors(-1)}><span aria-hidden="true">‹</span></button>}
-      <div className={styles.colors} ref={colorScroller}>{montageColors.map((color, index) => <button type="button" key={color} data-color={color} aria-pressed={settings.color === color} className={settings.color === color ? styles.colorActive : ""} onClick={() => save({ ...settings, color })}><i data-color={color} />{t.montage.colors[index]}</button>)}</div>
+      <div className={styles.colors} ref={colorScroller}>{montageColors.map((color, index) => <button type="button" key={color} data-color={color} aria-pressed={settings.color === color} className={settings.color === color ? styles.colorActive : ""} onClick={() => selectColor(color)}><i data-color={color} />{t.montage.colors[index]}</button>)}</div>
       {canScrollColorsRight && <button type="button" className={`${styles.colorArrow} ${styles.colorArrowRight}`} aria-label={t.montage.nextColors} onClick={() => scrollColors(1)}><span aria-hidden="true">›</span></button>}
     </div>
     <div className={styles.sectionTitle}><strong>{t.montage.video}</strong><button type="button" className={styles.requirementsLink} onClick={() => setRequirementsOpen(true)}><Icon name="help" /> {t.montage.requirements}</button></div>
@@ -237,8 +254,8 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   </>;
 }
 
-function PreviewSubtitles({ color, leaving = false, language }: { color: MontageColor; leaving?: boolean; language: MiniAppLanguage }) {
-  return <div className={`${styles.subtitle} ${leaving ? styles.subtitleLeaving : styles.subtitleEntering}`} data-color={color}><span>{language === "ru" ? "Это пример" : "Subtitle"}</span><b>{language === "ru" ? "субтитров" : "preview"}</b><em>{language === "ru" ? "в стиле Glass" : "in Glass style"}</em></div>;
+function PreviewSubtitles({ color, phase, language }: { color: MontageColor; phase: "idle" | "leaving" | "entering"; language: MiniAppLanguage }) {
+  return <div className={`${styles.subtitle} ${phase === "leaving" ? styles.subtitleLeaving : phase === "entering" ? styles.subtitleEntering : ""}`} data-color={color}><span>{language === "ru" ? "Это пример" : "Subtitle"}</span><b>{language === "ru" ? "субтитров" : "preview"}</b><em>{language === "ru" ? "в стиле Glass" : "in Glass style"}</em></div>;
 }
 
 function Toggle({ label, help, value, change, featured = false }: { label: string; help(): void; value: boolean; change(value: boolean): void; featured?: boolean }) {
