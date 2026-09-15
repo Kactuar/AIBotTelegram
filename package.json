@@ -23,7 +23,7 @@
     "verify": "npm run lint && npm run typecheck && npm test && npm run test:watermark && npm run test:video"
   },
   "dependencies": {
-    "@types/ffmpeg-static": "^3.0.3",
+    "@types/ffmpeg-static": "^5.1.0",
     "better-sqlite3": "^13.0.3",
     "dotenv": "^16.6.1",
     "ffmpeg-static": "^5.3.0",
