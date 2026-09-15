@@ -10,6 +10,18 @@ let remove: (() => void) | undefined;
 afterEach(() => { remove?.(); remove = undefined; });
 
 describe("SQLite backup and restore", () => {
+  it("backs up an existing database before its migrations are current", async () => {
+    const fixture = createTestDatabase({ migrate: false }); remove = fixture.remove;
+    const source = new Database(fixture.filename);
+    source.exec("CREATE TABLE legacy_data (value TEXT NOT NULL); INSERT INTO legacy_data VALUES ('preserved')");
+    source.close();
+    const backup = path.join(fixture.root, "backups", "before-migration.sqlite");
+    await backupDatabase(backup);
+    const copy = new Database(backup, { readonly: true });
+    expect(copy.prepare("SELECT value FROM legacy_data").get()).toEqual({ value: "preserved" });
+    copy.close();
+  });
+
   it("creates an integrity-checked backup and restores only to a new path", async () => {
     const fixture = createTestDatabase(); remove = fixture.remove;
     getUser("42");

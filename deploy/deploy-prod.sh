@@ -90,11 +90,11 @@ build_candidate() {
   local candidate="$1"
   local backup_file="$2"
   cd "$candidate"
-  npm ci
-  npm run db:backup -- "$backup_file"
-  npm run db:migrate
-  npm run verify
-  npm run build
+  npm ci || return 1
+  npm run db:backup -- "$backup_file" || return 1
+  npm run db:migrate || return 1
+  npm run verify || return 1
+  npm run build || return 1
 }
 
 repository_root="$current_link"

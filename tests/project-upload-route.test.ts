@@ -2,7 +2,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const requireUserId = vi.hoisted(() => vi.fn<() => Promise<string>>());
+const canAcceptUpload = vi.hoisted(() => vi.fn<() => Promise<boolean>>());
 vi.mock("@/src/server/auth", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/src/server/auth")>()), requireUserId }));
+vi.mock("@/src/server/storage", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/src/server/storage")>()), canAcceptUpload }));
 
 import { PUT } from "@/app/api/projects/[id]/input/route";
 import { defaultMontageSettings } from "@/src/domain/montage";
@@ -17,6 +19,7 @@ describe("project upload route", () => {
     const fixture = createTestDatabase(); remove = fixture.remove;
     process.env.STORAGE_ROOT = path.join(fixture.root, "storage");
     requireUserId.mockResolvedValue("42");
+    canAcceptUpload.mockResolvedValue(true);
     const project = createProject("upload-failure", "42", defaultMontageSettings);
     const body = new ReadableStream<Uint8Array>({ start(controller) { controller.error(new Error("stream_failed")); } });
     const request = new Request("http://verification.local/api/projects/upload-failure/input", {

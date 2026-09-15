@@ -8,6 +8,9 @@ describe("production deploy script", () => {
     expect(script).toContain("git -C \"$repository_root\" worktree add --detach");
     expect(script).toContain("npm run db:backup");
     expect(script).toContain("npm run db:migrate");
+    expect(script).toMatch(/npm run db:backup[^\n]*\|\| return 1/);
+    expect(script).toMatch(/npm run db:migrate[^\n]*\|\| return 1/);
+    expect(script).toMatch(/npm run verify[^\n]*\|\| return 1/);
     expect(script).toContain("mv -Tf \"$candidate_link\" \"$current_link\"");
     expect(script).toContain("switch_current \"$previous_release\"");
     expect(script).not.toContain("reset --hard");

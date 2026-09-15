@@ -3,7 +3,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { appConfig } from "@/src/server/config";
-import { db } from "@/src/server/database";
 
 function integrityCheck(filename: string) {
   const backup = new Database(filename, { readonly: true });
@@ -18,7 +17,9 @@ export async function backupDatabase(destination: string) {
   const target = path.resolve(destination);
   if (source === target) throw new Error("backup_destination_must_not_be_the_live_database");
   await fs.mkdir(path.dirname(target), { recursive: true });
-  await db().backup(target);
+  const connection = new Database(source, { readonly: true, fileMustExist: true });
+  try { await connection.backup(target); }
+  finally { connection.close(); }
   integrityCheck(target);
   const digest = crypto.createHash("sha256").update(await fs.readFile(target)).digest("hex");
   await fs.writeFile(`${target}.sha256`, `${digest}  ${path.basename(target)}\n`, "utf8");

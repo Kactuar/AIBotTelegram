@@ -63,7 +63,8 @@ const migrations: (() => void)[] = [
         telegram_id TEXT PRIMARY KEY, first_name TEXT, username TEXT, balance INTEGER NOT NULL,
         settings_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
-      INSERT INTO users SELECT * FROM users_without_foreign_keys;
+      INSERT INTO users (telegram_id, first_name, username, balance, settings_json, created_at, updated_at)
+        SELECT telegram_id, first_name, username, balance, settings_json, created_at, updated_at FROM users_without_foreign_keys;
 
       ALTER TABLE projects RENAME TO projects_without_foreign_keys;
       CREATE TABLE projects (
@@ -72,7 +73,8 @@ const migrations: (() => void)[] = [
         runway_task_id TEXT, status TEXT NOT NULL, error_code TEXT, reserved_tokens INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL, result_expires_at TEXT
       );
-      INSERT INTO projects SELECT * FROM projects_without_foreign_keys;
+      INSERT INTO projects (id, user_id, settings_json, prompt, input_path, result_path, watermarked_result_path, is_trial, trial_unlocked_at, runway_task_id, status, error_code, reserved_tokens, created_at, updated_at, result_expires_at)
+        SELECT id, user_id, settings_json, prompt, input_path, result_path, watermarked_result_path, is_trial, trial_unlocked_at, runway_task_id, status, error_code, reserved_tokens, created_at, updated_at, result_expires_at FROM projects_without_foreign_keys;
 
       ALTER TABLE openrouter_jobs RENAME TO openrouter_jobs_without_foreign_keys;
       CREATE TABLE openrouter_jobs (
