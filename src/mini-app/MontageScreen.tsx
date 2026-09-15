@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { defaultMontageSettings, montageColors, type MontageSettings } from "@/src/domain/montage";
+import { defaultMontageSettings, montageColors, type MontageColor, type MontageSettings } from "@/src/domain/montage";
 import type { ProjectResponse, ProjectsResponse, PublicProject } from "@/src/domain/api";
 import { MAX_VIDEO_UPLOAD_BYTES, videoUploadDetails, type VideoContentType } from "@/src/domain/video-upload";
 import { Icon } from "./AppShell";
@@ -31,6 +31,8 @@ type Props = {
 
 export default function MontageScreen({ authorized, authPending, authError, balance, initialSettings, language, trialAvailable, header, nav, onBalanceChange, onSelectBalance, onTrialAvailableChange }: Props) {
   const [settings, setSettings] = useState(initialSettings || defaultMontageSettings);
+  const [captionColor, setCaptionColor] = useState(settings.color);
+  const [leavingCaptionColor, setLeavingCaptionColor] = useState<MontageColor>();
   const [preview, setPreview] = useState<string>();
   const [selectedVideo, setSelectedVideo] = useState<SelectedVideo>();
   const [project, setProject] = useState<PublicProject>();
@@ -51,6 +53,13 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   const closeOverlay = useCallback(() => { setIntroOpen(false); setRequirementsOpen(false); setHelpOption(undefined); }, []);
 
   useEffect(() => { setSettings(initialSettings); }, [initialSettings]);
+  useEffect(() => {
+    if (settings.color === captionColor) return;
+    setLeavingCaptionColor(captionColor);
+    setCaptionColor(settings.color);
+    const timer = window.setTimeout(() => setLeavingCaptionColor(undefined), 320);
+    return () => window.clearTimeout(timer);
+  }, [captionColor, settings.color]);
   const updateColorNavigation = useCallback(() => {
     const scroller = colorScroller.current;
     if (!scroller) return;
@@ -205,7 +214,7 @@ export default function MontageScreen({ authorized, authPending, authError, bala
   const busy = uploading > 0 || ["queued", "processing"].includes(project?.status || "");
   return <>
     {header}
-    <section className={styles.preview} data-color={settings.color}>{preview ? <video src={preview} controls playsInline /> : <div className={styles.demo}><span>{language === "ru" ? "Это пример" : "Subtitle"}</span><b>{language === "ru" ? "субтитров" : "preview"}</b><em>{language === "ru" ? "в стиле Glass" : "in Glass style"}</em></div>}<button className={styles.play} onClick={() => setIntroOpen(true)} aria-label={t.common.close}><Icon name="play" /></button></section>
+    <section className={styles.preview}>{preview ? <video src={preview} controls playsInline /> : <div className={styles.demo} />}<div className={styles.subtitles} aria-hidden="true">{leavingCaptionColor && <PreviewSubtitles color={leavingCaptionColor} leaving language={language} />}<PreviewSubtitles color={captionColor} language={language} /></div><button className={styles.play} onClick={() => setIntroOpen(true)} aria-label={t.common.close}><Icon name="play" /></button></section>
     <div className={styles.styles}><button className={styles.activeStyle}>Glass</button><button disabled>Poster <small>{t.montage.stylesSoon}</small></button><button disabled>Editorial <small>{t.montage.stylesSoon}</small></button></div>
     <div className={styles.colorCarousel}>
       {canScrollColorsLeft && <button type="button" className={`${styles.colorArrow} ${styles.colorArrowLeft}`} aria-label={t.montage.previousColors} onClick={() => scrollColors(-1)}><span aria-hidden="true">‹</span></button>}
@@ -226,6 +235,10 @@ export default function MontageScreen({ authorized, authPending, authError, bala
     {helpOption && <OptionHelp language={language} option={helpOption} onClose={closeOverlay} />}
     {introOpen && <div className={styles.modalBack} onMouseDown={closeOverlay}><section className={styles.modal} onMouseDown={(event) => event.stopPropagation()}><div className={styles.modalVideo}>{preview ? <video src={preview} controls playsInline autoPlay /> : <div className={styles.demo}><span>{t.montage.introTitle}</span><b>Reels</b><em>{t.montage.introSubtitle}</em></div>}</div><button onClick={closeOverlay}>{t.montage.introClose}</button></section></div>}
   </>;
+}
+
+function PreviewSubtitles({ color, leaving = false, language }: { color: MontageColor; leaving?: boolean; language: MiniAppLanguage }) {
+  return <div className={`${styles.subtitle} ${leaving ? styles.subtitleLeaving : styles.subtitleEntering}`} data-color={color}><span>{language === "ru" ? "Это пример" : "Subtitle"}</span><b>{language === "ru" ? "субтитров" : "preview"}</b><em>{language === "ru" ? "в стиле Glass" : "in Glass style"}</em></div>;
 }
 
 function Toggle({ label, help, value, change, featured = false }: { label: string; help(): void; value: boolean; change(value: boolean): void; featured?: boolean }) {
